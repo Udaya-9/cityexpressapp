@@ -1,0 +1,38 @@
+/* style.css */
+.center {
+  text-align: center;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Plain, clean styling - no dark blue */
+.ant-card {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #333 !important;
+}
+
+.ant-input,
+.ant-input-password {
+  border-radius: 6px !important;
+}
+
+.ant-btn-primary {
+  height: 40px !important;
+  border-radius: 6px !important;
+  font-weight: 500;
+}
+
+/* No animations */
+.ant-card,
+.ant-btn,
+.ant-input,
+.ant-input-password,
+a {
+  transition: none !important;
+  animation: none !important;
+}
