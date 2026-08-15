@@ -24,12 +24,12 @@ const LoginPage = () => {
           className="login-form"
         >
           <Form.Item
-            label="Username or Email"
+            label="eMail"
             name="username"
             rules={[{ required: true, message: "Please enter your official eMail address!" }]}
           >
             <Input 
-              placeholder="Enter your username" 
+              placeholder="Enter your official eMail address" 
               className="custom-input"
               size="large"
             />
