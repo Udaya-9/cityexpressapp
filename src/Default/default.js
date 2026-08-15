@@ -7,10 +7,7 @@ import {
   LogoutOutlined,
   LockOutlined,
   ProfileOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   HomeOutlined,
-  TeamOutlined,
   FileTextOutlined,
   PieChartOutlined,
   DownOutlined,
@@ -50,44 +47,16 @@ const Dashboard = ({ children }) => {
       },
       {
         key: 'asset-register',
-        label: 'Asset Register',
+        label: 'Fixed Asset Register',
       },
-      {
-        key: 'asset-list',
-        label: 'List Asset',
-      },
+    
       {
         key: 'asset-deployment',
-        label: 'Asset Deployment',
+        label: 'Asset Dispatch',
       },
     ],
   },
 
-  {
-    key: 'fixed-asset',
-    icon: <HomeOutlined />,
-    label: 'Fixed Asset',
-    children: [
-      {
-        key: 'fixed-register',
-        label: 'Asset Register',
-      },
-      {
-        key: 'execute-depreciation',
-        label: 'Execute Report',
-      },
-      {
-        key: 'depreciation-report',
-        label: 'Depreciation Report',
-      },
-    ],
-  },
-
-  {
-    key: 'operating-asset',
-    icon: <TeamOutlined />,
-    label: 'Operating Asset',
-  },
 
   {
     key: 'memo',
@@ -145,22 +114,7 @@ const Dashboard = ({ children }) => {
     ],
   },
 
-  {
-    key: 'redispatch',
-    icon: <FileTextOutlined />,
-    label: 'Re-Dispatch',
-    children: [
-      {
-        key: 'redispatch-stock',
-        label: 'Re-Dispatch Stock',
-      },
-      {
-        key: 'redispatch-report',
-        label: 'Re-Dispatch Report',
-      },
-    ],
-  },
-
+ 
   {
     key: 'report',
     icon: <PieChartOutlined />,
@@ -194,28 +148,29 @@ const Dashboard = ({ children }) => {
         key: 'stock-ledger',
         label: 'Stock Ledger',
       },
-    ],
-  },
-
-  {
-    key: 'transaction-report',
-    icon: <FileTextOutlined />,
-    label: 'Transaction Rpt',
-    children: [
+      {
+        key: 'execute-depreciation',
+        label: 'Execute Report',
+      },
+      {
+        key: 'depreciation-report',
+        label: 'Depreciation Report',
+      },
+       {
+        key: 'redispatch-report',
+        label: 'Re-Dispatch Report',
+      },
       {
         key: 'transaction-report-main',
         label: 'Transaction Report',
       },
       {
-        key: 'redispatch-report-user',
-        label: 'Redispatch Report',
-      },
-      {
         key: 'stakeholder-report',
         label: 'Stake Holder Report',
       },
-    ],
+    ],    
   },
+
 
   {
     key: 'requisition',
@@ -241,6 +196,10 @@ const Dashboard = ({ children }) => {
       {
         key: 'pending-requisition',
         label: 'Pending Requisition',
+      },
+       {
+        key: 'redispatch-stock',
+        label: 'Re-Dispatch Stock',
       },
     ],
   },
@@ -269,11 +228,7 @@ const Dashboard = ({ children }) => {
       {
         key: 'users',
         label: 'Users',
-      },
-      {
-        key: 'user-request',
-        label: 'User Request',
-      },
+      },      
       {
         key: 'parameter-settings',
         label: 'Parameter Settings',
@@ -281,8 +236,6 @@ const Dashboard = ({ children }) => {
     ],
   },
 ];
-
-  // Dropdown menu items for user profile
   const userMenuItems = [
     {
       key: '1',
@@ -413,7 +366,7 @@ const Dashboard = ({ children }) => {
         {/* Horizontal Header */}
         <Header
           style={{
-            background: '#e71d29',
+            background: '#03044b',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',

@@ -52,11 +52,6 @@
   display: none !important;
 }
 
-
-/* =========================================================
-   Submenu
-   ========================================================= */
-
 .custom-sidebar .ant-menu-submenu-title {
   padding: 0 16px !important;
   margin: 2px 0 !important;
@@ -98,10 +93,6 @@
 }
 
 
-/* =========================================================
-   Submenu Items
-   ========================================================= */
-
 .custom-sidebar .ant-menu-sub {
   background-color: #1803d4 !important;
 }
@@ -141,20 +132,12 @@
 }
 
 
-/* =========================================================
-   Menu Item Icon Spacing
-   ========================================================= */
-
 .custom-sidebar .ant-menu-item .anticon,
 .custom-sidebar .ant-menu-submenu-title .anticon {
   font-size: 16px;
   min-width: 20px;
 }
 
-
-/* =========================================================
-   Sidebar Scrollbar
-   ========================================================= */
 
 .custom-sidebar::-webkit-scrollbar {
   width: 4px;
@@ -177,9 +160,6 @@
 }
 
 
-/* =========================================================
-   Collapsed Sidebar
-   ========================================================= */
 
 .custom-sidebar.ant-layout-sider-collapsed .ant-menu-item .anticon,
 .custom-sidebar.ant-layout-sider-collapsed .ant-menu-submenu-title .anticon {
@@ -193,10 +173,6 @@
   display: none !important;
 }
 
-
-/* =========================================================
-   User Dropdown
-   ========================================================= */
 
 .ant-dropdown .user-dropdown-custom .ant-dropdown-menu {
   border-radius: 8px;
@@ -221,10 +197,6 @@
   background-color: #fff1f0;
 }
 
-
-/* =========================================================
-   Responsive Adjustments
-   ========================================================= */
 
 @media (max-width: 768px) {
 
