@@ -1,10 +1,15 @@
 import React from "react";
 import { Form, Input, Button, Card } from "antd";
+import { useNavigate } from "react-router-dom";
 import './style.css';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+
   const onFinish = (values) => {
     console.log("Login values:", values);
+    // Navigate to Default page
+    navigate('/default');
   };
 
   return (
@@ -24,12 +29,12 @@ const LoginPage = () => {
           className="login-form"
         >
           <Form.Item
-            label="eMail"
+            label="Username or Email"
             name="username"
-            rules={[{ required: true, message: "Please enter your official eMail address!" }]}
+            rules={[{ required: true, message: "Please enter your username!" }]}
           >
             <Input 
-              placeholder="Enter your official eMail address" 
+              placeholder="Enter your username" 
               className="custom-input"
               size="large"
             />
@@ -56,14 +61,18 @@ const LoginPage = () => {
               type="primary" 
               htmlType="submit" 
               block
-              size="large"
+              size="large"              
               className="login-button"
             >
               Sign In
             </Button>
           </Form.Item>
 
-          
+          <div className="login-footer">
+            <p className="signup-text">
+              Don't have an account? <a href="/SignUp">Create one</a>
+            </p>
+          </div>
         </Form>
       </Card>
     </div>
