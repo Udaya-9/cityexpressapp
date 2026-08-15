@@ -1,5 +1,15 @@
-import React from 'react';
-import { Layout, Menu, Dropdown, Avatar, Space, Typography } from 'antd';
+import React, { useState } from 'react';
+import {
+  Layout,
+  Menu,
+  Dropdown,
+  Avatar,
+  Space,
+  Typography,
+} from 'antd';
+
+import { useNavigate } from 'react-router-dom';
+
 import {
   DashboardOutlined,
   UserOutlined,
@@ -12,230 +22,239 @@ import {
   PieChartOutlined,
   DownOutlined,
 } from '@ant-design/icons';
-import { useState } from 'react';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const Dashboard = ({ children }) => {
+  const navigate = useNavigate();
+
   const [collapsed, setCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [openKeys, setOpenKeys] = useState([]);
 
-  // Menu items for vertical sidebar
- const sidebarMenuItems = [
-  {
-    key: 'dashboard',
-    icon: <DashboardOutlined />,
-    label: 'Dashboard',
-  },
+  // =========================================================
+  // SIDEBAR MENU
+  // =========================================================
 
-  {
-    key: 'vendor',
-    icon: <HomeOutlined />,
-    label: 'Vendor',
-  },
+  const sidebarMenuItems = [
+    {
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
+    },
 
-  {
-    key: 'asset-management',
-    icon: <FileTextOutlined />,
-    label: 'Asset Management',
-    children: [
-      {
-        key: 'asset-add',
-        label: 'Add Assets',
-      },
-      {
-        key: 'asset-register',
-        label: 'Fixed Asset Register',
-      },
-    
-      {
-        key: 'asset-deployment',
-        label: 'Asset Dispatch',
-      },
-    ],
-  },
+    {
+      key: 'vendor',
+      icon: <HomeOutlined />,
+      label: 'Vendor',
+    },
 
+    {
+      key: 'asset-management',
+      icon: <FileTextOutlined />,
+      label: 'Asset Management',
+      children: [
+        {
+          key: 'asset-add',
+          label: 'Add Assets',
+        },
+        {
+          key: 'asset-register',
+          label: 'Fixed Asset Register',
+        },
+        {
+          key: 'asset-deployment',
+          label: 'Asset Dispatch',
+        },
+      ],
+    },
 
-  {
-    key: 'memo',
-    icon: <FileTextOutlined />,
-    label: 'Memo',
-    children: [
-      {
-        key: 'memo-create',
-        label: 'Create New',
-      },
-      {
-        key: 'memo-inbox',
-        label: 'Inbox',
-      },
-      {
-        key: 'memo-sent',
-        label: 'Sent',
-      },
-      {
-        key: 'purchase-order',
-        label: 'Purchase Order',
-      },
-      {
-        key: 'recurring-memo',
-        label: 'Recurring Memo',
-      },
-    ],
-  },
+    {
+      key: 'memo',
+      icon: <FileTextOutlined />,
+      label: 'Memo',
+      children: [
+        {
+          key: 'memo-create',
+          label: 'Create New',
+        },
+        {
+          key: 'memo-inbox',
+          label: 'Inbox',
+        },
+        {
+          key: 'memo-sent',
+          label: 'Sent',
+        },
+        {
+          key: 'purchase-order',
+          label: 'Purchase Order',
+        },
+        {
+          key: 'recurring-memo',
+          label: 'Recurring Memo',
+        },
+      ],
+    },
 
-  {
-    key: 'budget',
-    icon: <PieChartOutlined />,
-    label: 'Budget',
-    children: [
-      {
-        key: 'budget-heading',
-        label: 'Budget Heading',
-      },
-      {
-        key: 'budget-management',
-        label: 'Budget Management',
-      },
-      {
-        key: 'budget-approve',
-        label: 'Budget Approve',
-      },
-      {
-        key: 'budget-amendment',
-        label: 'Budget Amendment',
-      },
-      {
-        key: 'budget-transaction',
-        label: 'Transaction',
-      },
-    ],
-  },
+    {
+      key: 'budget',
+      icon: <PieChartOutlined />,
+      label: 'Budget',
+      children: [
+        {
+          key: 'budget-heading',
+          label: 'Budget Heading',
+        },
+        {
+          key: 'budget-management',
+          label: 'Budget Management',
+        },
+        {
+          key: 'budget-approve',
+          label: 'Budget Approve',
+        },
+        {
+          key: 'budget-amendment',
+          label: 'Budget Amendment',
+        },
+        {
+          key: 'budget-transaction',
+          label: 'Transaction',
+        },
+      ],
+    },
 
- 
-  {
-    key: 'report',
-    icon: <PieChartOutlined />,
-    label: 'Report',
-    children: [
-      {
-        key: 'daily-stock',
-        label: 'Daily Stock',
-      },
-      {
-        key: 'outward-item',
-        label: 'Outward Item',
-      },
-      {
-        key: 'outward-department',
-        label: 'Outward Department',
-      },
-      {
-        key: 'purchase-vendor',
-        label: 'Purchase Vendor',
-      },
-      {
-        key: 'purchase-product',
-        label: 'Purchase Product',
-      },
-      {
-        key: 'stock-value',
-        label: 'Stock Report with Value',
-      },
-      {
-        key: 'stock-ledger',
-        label: 'Stock Ledger',
-      },
-      {
-        key: 'execute-depreciation',
-        label: 'Execute Report',
-      },
-      {
-        key: 'depreciation-report',
-        label: 'Depreciation Report',
-      },
-       {
-        key: 'redispatch-report',
-        label: 'Re-Dispatch Report',
-      },
-      {
-        key: 'transaction-report-main',
-        label: 'Transaction Report',
-      },
-      {
-        key: 'stakeholder-report',
-        label: 'Stake Holder Report',
-      },
-    ],    
-  },
+    {
+      key: 'report',
+      icon: <PieChartOutlined />,
+      label: 'Report',
+      children: [
+        {
+          key: 'daily-stock',
+          label: 'Daily Stock',
+        },
+        {
+          key: 'outward-item',
+          label: 'Outward Item',
+        },
+        {
+          key: 'outward-department',
+          label: 'Outward Department',
+        },
+        {
+          key: 'purchase-vendor',
+          label: 'Purchase Vendor',
+        },
+        {
+          key: 'purchase-product',
+          label: 'Purchase Product',
+        },
+        {
+          key: 'stock-value',
+          label: 'Stock Report with Value',
+        },
+        {
+          key: 'stock-ledger',
+          label: 'Stock Ledger',
+        },
+        {
+          key: 'execute-depreciation',
+          label: 'Execute Report',
+        },
+        {
+          key: 'depreciation-report',
+          label: 'Depreciation Report',
+        },
+        {
+          key: 'redispatch-report',
+          label: 'Re-Dispatch Report',
+        },
+        {
+          key: 'transaction-report-main',
+          label: 'Transaction Report',
+        },
+        {
+          key: 'stakeholder-report',
+          label: 'Stake Holder Report',
+        },
+      ],
+    },
 
+    {
+      key: 'requisition',
+      icon: <FileTextOutlined />,
+      label: 'Requisition',
+      children: [
+        {
+          key: 'list-requisition',
+          label: 'List Requisition',
+        },
+        {
+          key: 'verify-requisition',
+          label: 'Verify Requisition',
+        },
+        {
+          key: 'dispatch-requisition',
+          label: 'Dispatch Requisition',
+        },
+        {
+          key: 'delete-requisition',
+          label: 'Delete Requisition',
+        },
+        {
+          key: 'pending-requisition',
+          label: 'Pending Requisition',
+        },
+        {
+          key: 'redispatch-stock',
+          label: 'Re-Dispatch Stock',
+        },
+      ],
+    },
 
-  {
-    key: 'requisition',
-    icon: <FileTextOutlined />,
-    label: 'Requisition',
-    children: [
-      {
-        key: 'list-requisition',
-        label: 'List Requisition',
-      },
-      {
-        key: 'verify-requisition',
-        label: 'Verify Requisition',
-      },
-      {
-        key: 'dispatch-requisition',
-        label: 'Dispatch Requisition',
-      },
-      {
-        key: 'delete-requisition',
-        label: 'Delete Requisition',
-      },
-      {
-        key: 'pending-requisition',
-        label: 'Pending Requisition',
-      },
-       {
-        key: 'redispatch-stock',
-        label: 'Re-Dispatch Stock',
-      },
-    ],
-  },
+    {
+      key: 'correspondence',
+      icon: <FileTextOutlined />,
+      label: 'Correspondence',
+      children: [
+        {
+          key: 'incoming',
+          label: 'Incoming',
+        },
+        {
+          key: 'outgoing',
+          label: 'Outgoing',
+        },
+      ],
+    },
 
-  {
-    key: 'correspondence',
-    icon: <FileTextOutlined />,
-    label: 'Correspondence',
-    children: [
-      {
-        key: 'incoming',
-        label: 'Incoming',
-      },
-      {
-        key: 'outgoing',
-        label: 'Outgoing',
-      },
-    ],
-  },
+    // =========================================================
+    // SETTINGS
+    // =========================================================
 
-  {
-    key: 'settings',
-    icon: <SettingOutlined />,
-    label: 'Settings',
-    children: [
-      {
-        key: 'users',
-        label: 'Users',
-      },      
-      {
-        key: 'parameter-settings',
-        label: 'Parameter Settings',
-      },
-    ],
-  },
-];
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+      children: [
+        {
+          key: 'users',
+          label: 'Users',
+        },
+        {
+          key: 'parameter-settings',
+          label: 'Parameter Settings',
+        },
+      ],
+    },
+  ];
+
+  // =========================================================
+  // TOP RIGHT USER MENU
+  // =========================================================
+
   const userMenuItems = [
     {
       key: '1',
@@ -255,45 +274,231 @@ const Dashboard = ({ children }) => {
     },
   ];
 
-  const handleUserMenuClick = ({ key }) => {
-    console.log('User menu clicked:', key);
-    // Handle navigation based on key
-    switch(key) {
-      case '1':
-        // Navigate to profile
+  // =========================================================
+  // SIDEBAR CLICK
+  // =========================================================
+
+  const handleSidebarClick = ({ key }) => {
+    console.log('Sidebar menu clicked:', key);
+
+    switch (key) {
+      case 'dashboard':
+        navigate('/dashboard');
         break;
-      case '2':
-        // Navigate to change password
+
+      case 'vendor':
+        navigate('/vendor');
         break;
-      case '3':
-        // Handle logout
+
+      // Asset Management
+      case 'asset-add':
+        navigate('/asset-management/add');
         break;
+
+      case 'asset-register':
+        navigate('/asset-management/register');
+        break;
+
+      case 'asset-deployment':
+        navigate('/asset-management/deployment');
+        break;
+
+      // Memo
+      case 'memo-create':
+        navigate('/memo/create');
+        break;
+
+      case 'memo-inbox':
+        navigate('/memo/inbox');
+        break;
+
+      case 'memo-sent':
+        navigate('/memo/sent');
+        break;
+
+      case 'purchase-order':
+        navigate('/memo/purchase-order');
+        break;
+
+      case 'recurring-memo':
+        navigate('/memo/recurring');
+        break;
+
+      // Budget
+      case 'budget-heading':
+        navigate('/budget/heading');
+        break;
+
+      case 'budget-management':
+        navigate('/budget/management');
+        break;
+
+      case 'budget-approve':
+        navigate('/budget/approve');
+        break;
+
+      case 'budget-amendment':
+        navigate('/budget/amendment');
+        break;
+
+      case 'budget-transaction':
+        navigate('/budget/transaction');
+        break;
+
+      // Reports
+      case 'daily-stock':
+        navigate('/report/daily-stock');
+        break;
+
+      case 'outward-item':
+        navigate('/report/outward-item');
+        break;
+
+      case 'outward-department':
+        navigate('/report/outward-department');
+        break;
+
+      case 'purchase-vendor':
+        navigate('/report/purchase-vendor');
+        break;
+
+      case 'purchase-product':
+        navigate('/report/purchase-product');
+        break;
+
+      case 'stock-value':
+        navigate('/report/stock-value');
+        break;
+
+      case 'stock-ledger':
+        navigate('/report/stock-ledger');
+        break;
+
+      case 'execute-depreciation':
+        navigate('/report/execute-depreciation');
+        break;
+
+      case 'depreciation-report':
+        navigate('/report/depreciation');
+        break;
+
+      case 'redispatch-report':
+        navigate('/report/redispatch');
+        break;
+
+      case 'transaction-report-main':
+        navigate('/report/transaction');
+        break;
+
+      case 'stakeholder-report':
+        navigate('/report/stakeholder');
+        break;
+
+      // Requisition
+      case 'list-requisition':
+        navigate('/requisition/list');
+        break;
+
+      case 'verify-requisition':
+        navigate('/requisition/verify');
+        break;
+
+      case 'dispatch-requisition':
+        navigate('/requisition/dispatch');
+        break;
+
+      case 'delete-requisition':
+        navigate('/requisition/delete');
+        break;
+
+      case 'pending-requisition':
+        navigate('/requisition/pending');
+        break;
+
+      case 'redispatch-stock':
+        navigate('/requisition/redispatch');
+        break;
+
+      // Correspondence
+      case 'incoming':
+        navigate('/correspondence/incoming');
+        break;
+
+      case 'outgoing':
+        navigate('/correspondence/outgoing');
+        break;
+
+      // Settings
+      case 'users':
+        navigate('/User');
+        break;
+
+      case 'parameter-settings':
+        navigate('/parameter-settings');
+        break;
+
       default:
         break;
     }
   };
 
-  const handleSidebarClick = ({ key }) => {
-    console.log('Sidebar menu clicked:', key);
+  // =========================================================
+  // TOP RIGHT USER MENU CLICK
+  // =========================================================
+
+  const handleUserMenuClick = ({ key }) => {
+    console.log('User menu clicked:', key);
+
+    switch (key) {
+      case '1':
+        navigate('/profile');
+        break;
+
+      case '2':
+        navigate('/change-password');
+        break;
+
+      case '3':
+        console.log('Logout clicked');
+
+        // Add logout logic here
+        // localStorage.removeItem('token');
+
+        navigate('/');
+        break;
+
+      default:
+        break;
+    }
   };
 
-  // Handle open/close of submenus - only one open at a time
+  // =========================================================
+  // SUBMENU OPEN / CLOSE
+  // =========================================================
+
   const onOpenChange = (keys) => {
-    // Get the latest opened key (if any)
-    const latestOpenKey = keys.find(key => !openKeys.includes(key));
-    
+    const latestOpenKey = keys.find(
+      (key) => !openKeys.includes(key)
+    );
+
     if (latestOpenKey) {
-      // If a new key is opened, close all others and open only this one
       setOpenKeys([latestOpenKey]);
     } else {
-      // If all keys are being closed, just update the state
       setOpenKeys(keys);
     }
   };
 
+  // =========================================================
+  // RENDER
+  // =========================================================
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* Sidebar */}
+
+      {/* =====================================================
+          LEFT SIDEBAR
+      ====================================================== */}
+
       <Sider
         trigger={null}
         collapsible
@@ -308,7 +513,9 @@ const Dashboard = ({ children }) => {
         width={240}
         collapsedWidth={80}
       >
-        {/* Logo/Brand */}
+
+        {/* Logo / Brand */}
+
         <div
           style={{
             height: 64,
@@ -320,7 +527,8 @@ const Dashboard = ({ children }) => {
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          {(!collapsed && isHovered) ? (
+
+          {!collapsed && isHovered ? (
             <Text
               style={{
                 color: '#ffffff',
@@ -342,9 +550,11 @@ const Dashboard = ({ children }) => {
               CE
             </Text>
           )}
+
         </div>
 
         {/* Sidebar Menu */}
+
         <Menu
           theme="dark"
           mode="inline"
@@ -359,11 +569,19 @@ const Dashboard = ({ children }) => {
             marginTop: 8,
           }}
         />
+
       </Sider>
 
-      {/* Main Layout */}
+      {/* =====================================================
+          MAIN LAYOUT
+      ====================================================== */}
+
       <Layout>
-        {/* Horizontal Header */}
+
+        {/* ===================================================
+            TOP HEADER
+        ==================================================== */}
+
         <Header
           style={{
             background: '#03044b',
@@ -375,12 +593,30 @@ const Dashboard = ({ children }) => {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            
+
+          {/* Left Header */}
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Fiscal Year Display */}
+          {/* Right Header */}
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+            }}
+          >
+
+            {/* Fiscal Year */}
+
             <div
               style={{
                 background: 'rgba(255, 255, 255, 0.15)',
@@ -389,12 +625,19 @@ const Dashboard = ({ children }) => {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
               }}
             >
-              <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: 400 }}>
+              <Text
+                style={{
+                  color: '#ffffff',
+                  fontSize: 13,
+                  fontWeight: 400,
+                }}
+              >
                 FY 2024-25
               </Text>
             </div>
 
             {/* User Dropdown */}
+
             <Dropdown
               menu={{
                 items: userMenuItems,
@@ -403,6 +646,7 @@ const Dashboard = ({ children }) => {
               placement="bottomRight"
               arrow
             >
+
               <div
                 style={{
                   display: 'flex',
@@ -415,12 +659,15 @@ const Dashboard = ({ children }) => {
                   transition: 'background 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.background =
+                    'rgba(255, 255, 255, 0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.background =
+                    'rgba(255, 255, 255, 0.1)';
                 }}
               >
+
                 <Avatar
                   style={{
                     background: '#1890ff',
@@ -428,18 +675,39 @@ const Dashboard = ({ children }) => {
                   }}
                   icon={<UserOutlined />}
                 />
+
                 <Space>
-                  <Text style={{ color: '#ffffff', fontWeight: 500 }}>
+
+                  <Text
+                    style={{
+                      color: '#ffffff',
+                      fontWeight: 500,
+                    }}
+                  >
                     John Doe
                   </Text>
-                  <DownOutlined style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }} />
+
+                  <DownOutlined
+                    style={{
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: 12,
+                    }}
+                  />
+
                 </Space>
+
               </div>
+
             </Dropdown>
+
           </div>
+
         </Header>
 
-        {/* Content Area */}
+        {/* ===================================================
+            CONTENT
+        ==================================================== */}
+
         <Content
           style={{
             margin: '24px 16px',
@@ -452,7 +720,9 @@ const Dashboard = ({ children }) => {
         >
           {children}
         </Content>
+
       </Layout>
+
     </Layout>
   );
 };

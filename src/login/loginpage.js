@@ -68,11 +68,7 @@ const LoginPage = () => {
             </Button>
           </Form.Item>
 
-          <div className="login-footer">
-            <p className="signup-text">
-              Don't have an account? <a href="/SignUp">Create one</a>
-            </p>
-          </div>
+          
         </Form>
       </Card>
     </div>
