@@ -8,7 +8,6 @@ import {
   LockOutlined,
   ProfileOutlined,
   HomeOutlined,
-  TeamOutlined,
   FileTextOutlined,
   PieChartOutlined,
   DownOutlined,
@@ -161,28 +160,17 @@ const Dashboard = ({ children }) => {
         key: 'redispatch-report',
         label: 'Re-Dispatch Report',
       },
-    ],
-  },
-
-  {
-    key: 'transaction-report',
-    icon: <FileTextOutlined />,
-    label: 'Transaction Rpt',
-    children: [
       {
         key: 'transaction-report-main',
         label: 'Transaction Report',
       },
       {
-        key: 'redispatch-report-user',
-        label: 'Redispatch Report',
-      },
-      {
         key: 'stakeholder-report',
         label: 'Stake Holder Report',
       },
-    ],
+    ],    
   },
+
 
   {
     key: 'requisition',
@@ -248,8 +236,6 @@ const Dashboard = ({ children }) => {
     ],
   },
 ];
-
-  // Dropdown menu items for user profile
   const userMenuItems = [
     {
       key: '1',
@@ -380,7 +366,7 @@ const Dashboard = ({ children }) => {
         {/* Horizontal Header */}
         <Header
           style={{
-            background: '#e71d29',
+            background: '#03044b',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
