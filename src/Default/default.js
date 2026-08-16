@@ -292,7 +292,7 @@ const Dashboard = ({ children }) => {
 
       // Asset Management
       case 'asset-add':
-        navigate('/asset-management/add');
+         navigate('/asset');
         break;
 
       case 'asset-register':
