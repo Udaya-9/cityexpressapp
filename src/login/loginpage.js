@@ -8,8 +8,7 @@ const LoginPage = () => {
 
   const onFinish = (values) => {
     console.log("Login values:", values);
-    // Navigate to Default page
-    navigate('/default');
+    navigate('/dashboard');
   };
 
   return (

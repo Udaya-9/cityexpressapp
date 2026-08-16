@@ -21,6 +21,12 @@ const UserList = () => {
             sorter: (a, b) => a.userName.localeCompare(b.userName),
             render: (value) => <Text strong>{value}</Text>,
         },
+         {
+            title: "Organization Name",
+            dataIndex: "organizationname",
+            key: "organizationname",
+            sorter: (a, b) => a.organizationname.localeCompare(b.organizationname),
+        },
         {
             title: "Full Name",
             dataIndex: "fullName",
@@ -54,6 +60,11 @@ const UserList = () => {
             key: "lastLoginDate",
             sorter: (a, b) =>
                 new Date(a.lastLoginDate) - new Date(b.lastLoginDate),
+        },
+         {
+            title: "Authentication",
+            dataIndex: "Authentication",
+            key: "Authentication",
         },
         {
             title: "Status",
@@ -108,12 +119,14 @@ const UserList = () => {
         {
             key: 1,
             userName: "Admin",
+            organizationname: "CEMT",
             fullName: "Administrator",
             department: "IT",
             unit: "Development",
             createdOn: "2026-08-01",
             createdBy: "System",
             lastLoginDate: "2026-08-15",
+               Authentication:"SuperAdmin",
             isBlocked: false,
             isSuspended: false,
             accessOnline: true,  // Added this field
@@ -121,15 +134,17 @@ const UserList = () => {
         {
             key: 2,
             userName: "udaya.ghimire@ctxpress.com",
+                organizationname: "CEMT-JP",
             fullName: "Uday Chandra Ghimire",
             department: "IT",
             unit: "Development",
             createdOn: "2026-08-02",
             createdBy: "kishan Bhari",
             lastLoginDate: "2026-08-14",
+            Authentication:"Admin",
             isBlocked: false,
             isSuspended: false,
-            accessOnline: true,  // Added this field
+            accessOnline: true,  
         },
     ];
 
