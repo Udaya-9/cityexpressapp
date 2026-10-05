@@ -1,0 +1,290 @@
+/* ================= PAGE LAYOUT ================= */
+.login-page {
+  display: flex;
+  min-height: 100vh;
+  background: #F2F5FA;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ================= BRAND PANEL (LEFT) ================= */
+.login-brand {
+  flex: 1.05;
+  background: linear-gradient(160deg, #01519b 0%, #013b73 60%, #022d5c 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand::before {
+  content: '';
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(122, 183, 255, 0.35) 0%, rgba(122, 183, 255, 0) 70%);
+  top: -160px;
+  right: -160px;
+  pointer-events: none;
+}
+
+.login-brand::after {
+  content: '';
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(77, 163, 255, 0.25) 0%, rgba(77, 163, 255, 0) 70%);
+  bottom: -140px;
+  left: -140px;
+  pointer-events: none;
+}
+
+.brand-inner {
+  max-width: 420px;
+  position: relative;
+  z-index: 2;
+}
+
+.brand-logo {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background: #fff;                          /* white background for the logo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;                             /* inner spacing so the logo doesn't touch edges */
+  box-shadow: 0 12px 28px rgba(77, 163, 255, 0.45);
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;                       /* keeps the logo's aspect ratio */
+  display: block;
+}
+
+.brand-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px;
+  color: #fff;
+}
+
+.brand-tagline {
+  font-size: 15px;
+  font-weight: 600;
+  color: #7ab7ff;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.brand-divider {
+  width: 48px;
+  height: 3px;
+  background: #4da3ff;
+  border-radius: 4px;
+  margin: 28px 0;
+  box-shadow: 0 0 14px rgba(77, 163, 255, 0.7);
+}
+
+.brand-desc {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0 0 48px;
+}
+
+.brand-footer {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.2px;
+}
+
+/* ================= FORM PANEL (RIGHT) ================= */
+.login-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  background: #F2F5FA;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #E3E8F0;
+  border-radius: 20px;
+  padding: 44px 40px;
+  box-shadow: 0 24px 48px -20px rgba(1, 40, 90, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.form-header {
+  margin-bottom: 32px;
+}
+
+.form-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0B2545;
+  letter-spacing: -0.4px;
+  margin: 0 0 6px;
+}
+
+.form-subtitle {
+  font-size: 13.5px;
+  color: #667085;
+  margin: 0;
+}
+
+/* ================= FORM FIELDS ================= */
+.login-form .ant-form-item-label {
+  padding-bottom: 6px;
+}
+
+.login-form .ant-form-item-label>label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16202F;
+  height: auto;
+}
+
+.login-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.custom-input.ant-input-affix-wrapper,
+.custom-input.ant-input {
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid #E3E8F0;
+  background: #F8FAFC;
+  font-size: 14px;
+  box-shadow: none;
+  padding: 0 14px;
+}
+
+.custom-input.ant-input-affix-wrapper:hover,
+.custom-input.ant-input:hover {
+  border-color: #C5CFDE;
+  background: #fff;
+}
+
+.custom-input.ant-input-affix-wrapper-focused,
+.custom-input.ant-input:focus {
+  border-color: #1F6FEB;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
+}
+
+.custom-input input.ant-input {
+  background: transparent;
+  font-size: 14px;
+}
+
+.input-icon {
+  color: #98A2B3;
+  font-size: 15px;
+}
+
+/* ================= ROW ================= */
+.form-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  margin-top: -8px;
+}
+
+.forgot-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F6FEB;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* ================= SUBMIT BUTTON ================= */
+.login-button.ant-btn {
+  height: 48px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  background: #1F6FEB;
+  border-color: #1F6FEB;
+  box-shadow: 0 10px 22px -10px rgba(31, 111, 235, 0.75);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-button.ant-btn:hover {
+  background: #1A5FCC !important;
+  border-color: #1A5FCC !important;
+}
+
+.login-button.ant-btn:focus {
+  background: #1A5FCC !important;
+}
+
+.btn-arrow {
+  font-size: 13px;
+  transition: none;
+}
+
+/* ================= FOOTER ================= */
+.form-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: #667085;
+}
+
+.form-footer a {
+  color: #1F6FEB;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .login-brand {
+    display: none;
+  }
+
+  .login-form-panel {
+    padding: 32px 20px;
+  }
+
+  .form-wrap {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-title {
+    font-size: 22px;
+  }
+
+  .form-wrap {
+    padding: 26px 20px;
+    border-radius: 16px;
+  }
+}

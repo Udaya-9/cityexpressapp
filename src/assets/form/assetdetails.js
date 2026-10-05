@@ -24,7 +24,7 @@ import {
 
 const { Title, Text } = Typography;
 
-const AssetDetail = () => {  // ✅ Component name matches
+const AssetDetail = () => {  
     const navigate = useNavigate();
     const { id } = useParams();
     const [asset, setAsset] = useState(null);

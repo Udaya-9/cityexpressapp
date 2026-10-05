@@ -1,12 +1,12 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LoginPage from "./login/loginpage";
-import ForgetPassword from "./login/forgetpassword";
-import DefaultPage from "./Default";
-import Dashboard from "./Default/default";
-import User from "./user";
-import Vendor from "./vendor";
-import Asset from "./assets";  // ✅ Import from assets folder
+import LoginPage from "./login/form/index";
+import ForgetPassword from "./login/form/forgetpassword";
+import DefaultPage from './Default/form';
+import Dashboard from "./Default/form/default";
+import User from "./user/form";
+import Vendor from "./vendor/form";
+import Asset from "./assets/form"; 
 
 function App() {
   return (
