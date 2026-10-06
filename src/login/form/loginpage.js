@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Form, Input, Button } from "antd";
+import { Form, Input, Button, message } from "antd";
 import { useNavigate } from "react-router-dom";
+import api from "../../API/api";
 import {
   UserOutlined,
   LockOutlined,
@@ -9,7 +10,8 @@ import {
   ArrowRightOutlined,
 } from "@ant-design/icons";
 import "./style.css";
-import logo from "../../Images/Logo_.png"
+import logo from "../../Images/Logo_.png";
+import Password from "antd/es/input/Password";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,27 +20,42 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // 🔌 Plug your API call here:
-      // const res = await axios.post("/api/auth/login", values);
-      // localStorage.setItem("token", res.data.token);
-      console.log("Login values:", values);
-      navigate("/dashboard");
+      const { data } = await api.post("/user/login", {
+        emailaddress: values.username,
+        password: values.password,
+      });
+
+      if (data.success && data.token) {
+        localStorage.setItem("token", data.token);
+        const payload = JSON.parse(atob(data.token.split(".")[1]));
+        localStorage.setItem("user", JSON.stringify(payload));
+
+        message.success(`Welcome back, ${payload.fullname || "User"}!`);
+        navigate("/dashboard");
+      } else {
+        message.error(data.message || "Login failed");
+      }
     } catch (err) {
-      console.error(err);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Cannot connect to server";
+      message.error(msg);
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const now = new Date();
-  const currentYear=now.getFullYear();
+  const currentYear = now.getFullYear();
   return (
     <div className="login-page">
       {/* Left brand panel */}
       <div className="login-brand">
         <div className="brand-inner">
           <div className="brand-logo">
-        <img
+            <img
               src={logo}
               alt="City Express Logo"
               className="brand-logo-img"
@@ -50,11 +67,13 @@ const LoginPage = () => {
           <div className="brand-divider" />
 
           <p className="brand-desc">
-           From requisitions and memos to fixed assets, approvals, dispatch, correspondence and stock.
+            From requisitions and memos to fixed assets, approvals, dispatch,
+            correspondence and stock.
           </p>
 
           <div className="brand-footer">
-            © {currentYear} City Express Money Transfer Pvt. Ltd · All rights reserved
+            © {currentYear} City Express Money Transfer Pvt. Ltd · All rights
+            reserved
           </div>
         </div>
       </div>
@@ -78,7 +97,9 @@ const LoginPage = () => {
             <Form.Item
               label="Username or Email"
               name="username"
-              rules={[{ required: true, message: "Please enter your username" }]}
+              rules={[
+                { required: true, message: "Please enter your username" },
+              ]}
             >
               <Input
                 prefix={<UserOutlined className="input-icon" />}
@@ -91,7 +112,9 @@ const LoginPage = () => {
             <Form.Item
               label="Password"
               name="password"
-              rules={[{ required: true, message: "Please enter your password" }]}
+              rules={[
+                { required: true, message: "Please enter your password" },
+              ]}
             >
               <Input.Password
                 prefix={<LockOutlined className="input-icon" />}
