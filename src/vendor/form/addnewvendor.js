@@ -1,53 +1,72 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
-    Card,
-    Form,
-    Input,
-    Select,
-    Switch,
-    Button,
-    Space,
-    Typography,
-    Row,
-    Col,
-    Divider,
-    message,
+    Card, Form, Input, Select, Switch, Button, Space,
+    Typography, Row, Col, Divider, message,
 } from "antd";
-import { 
-    ShopOutlined, 
-    SaveOutlined, 
-    ArrowLeftOutlined,
-    UserOutlined,
-    PhoneOutlined,
-    MailOutlined,
-    HomeOutlined,
-    IdcardOutlined,
+import {
+    ShopOutlined, SaveOutlined, ArrowLeftOutlined,
+    UserOutlined, PhoneOutlined, MailOutlined,
+    HomeOutlined, IdcardOutlined,
 } from "@ant-design/icons";
+
+import {
+    createVendor,
+    resetVendorState,
+    selectVendorCreating,
+    selectVendorError,
+    selectVendorSuccess,
+} from "../API/verdorslice"; 
 
 const { Text } = Typography;
 const { Option } = Select;
 
+// Replace this with your actual logged-in user's ID from your Auth state
+const CURRENT_USER_ID = "0227626F-2700-4DD6-B1FE-62D614BA4412";
+
 const CreateVendor = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
+
+    const creating = useSelector(selectVendorCreating);
+    const error = useSelector(selectVendorError);
+    const success = useSelector(selectVendorSuccess);
+
+    // Handle Success & Error
+    useEffect(() => {
+        if (success) {
+            message.success("Vendor created successfully!");
+            form.resetFields();
+            dispatch(resetVendorState());
+            navigate("/vendor");
+        }
+    }, [success, form, dispatch, navigate]);
+
+    useEffect(() => {
+        if (error) {
+            message.error(error);
+            dispatch(resetVendorState());
+        }
+    }, [error, dispatch]);
+
+    // Clean up state on unmount
+    useEffect(() => {
+        return () => dispatch(resetVendorState());
+    }, [dispatch]);
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            setLoading(true);
-            setTimeout(() => {
-                console.log("New vendor data:", values);
-                message.success("Vendor created successfully!");
-                setLoading(false);
-                form.resetFields();
-                navigate("/vendor");
-            }, 1500);
-        } catch (error) {
-            console.error("Validation failed:", error);
+            dispatch(
+                createVendor({
+                    formValues: values,
+                    createdBy: CURRENT_USER_ID,
+                })
+            );
+        } catch (err) {
             message.error("Please fill all required fields");
-            setLoading(false);
         }
     };
 
@@ -56,16 +75,11 @@ const CreateVendor = () => {
             title={
                 <Space>
                     <ShopOutlined />
-                    <Text strong style={{ fontSize: 18 }}>
-                        Create New Vendor
-                    </Text>
+                    <Text strong style={{ fontSize: 18 }}>Create New Vendor</Text>
                 </Space>
             }
             extra={
-                <Button 
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => navigate("/vendor")}
-                >
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/vendor")}>
                     Back to List
                 </Button>
             }
@@ -74,10 +88,7 @@ const CreateVendor = () => {
                 form={form}
                 layout="vertical"
                 autoComplete="off"
-                initialValues={{
-                    isActive: true,
-                    panVatType: "PAN",
-                }}
+                initialValues={{ isActive: true, panVatType: "PAN" }}
             >
                 <Row gutter={24}>
                     <Col span={12}>
@@ -86,7 +97,7 @@ const CreateVendor = () => {
                             name="vendorName"
                             rules={[
                                 { required: true, message: "Please enter vendor name" },
-                                { min: 2, message: "Vendor name must be at least 2 characters" }
+                                { min: 2, message: "Vendor name must be at least 2 characters" },
                             ]}
                         >
                             <Input placeholder="Enter vendor name" prefix={<ShopOutlined />} />
@@ -98,7 +109,7 @@ const CreateVendor = () => {
                             name="contactPerson"
                             rules={[
                                 { required: true, message: "Please enter contact person" },
-                                { min: 2, message: "Contact person must be at least 2 characters" }
+                                { min: 2, message: "Contact person must be at least 2 characters" },
                             ]}
                         >
                             <Input placeholder="Enter contact person" prefix={<UserOutlined />} />
@@ -122,7 +133,7 @@ const CreateVendor = () => {
                             name="mobileNo"
                             rules={[
                                 { required: true, message: "Please enter mobile number" },
-                                { pattern: /^[0-9]{10}$/, message: "Please enter valid 10-digit mobile number" }
+                                { pattern: /^[0-9]{10}$/, message: "Please enter valid 10-digit mobile number" },
                             ]}
                         >
                             <Input placeholder="Enter mobile number" prefix={<PhoneOutlined />} maxLength={10} />
@@ -132,10 +143,7 @@ const CreateVendor = () => {
 
                 <Row gutter={24}>
                     <Col span={12}>
-                        <Form.Item
-                            label="Phone No"
-                            name="phoneNo"
-                        >
+                        <Form.Item label="Phone No" name="phoneNo">
                             <Input placeholder="Enter phone number" prefix={<PhoneOutlined />} />
                         </Form.Item>
                     </Col>
@@ -145,7 +153,7 @@ const CreateVendor = () => {
                             name="email"
                             rules={[
                                 { required: true, message: "Please enter email address" },
-                                { type: "email", message: "Please enter valid email" }
+                                { type: "email", message: "Please enter valid email" },
                             ]}
                         >
                             <Input placeholder="Enter email address" prefix={<MailOutlined />} />
@@ -172,7 +180,7 @@ const CreateVendor = () => {
                             name="panVat"
                             rules={[
                                 { required: true, message: "Please enter PAN/VAT number" },
-                                { min: 5, message: "PAN/VAT number must be at least 5 characters" }
+                                { min: 5, message: "PAN/VAT number must be at least 5 characters" },
                             ]}
                         >
                             <Input placeholder="Enter PAN/VAT number" prefix={<IdcardOutlined />} />
@@ -187,38 +195,23 @@ const CreateVendor = () => {
                             name="registrationNo"
                             rules={[
                                 { required: true, message: "Please enter registration number" },
-                                { min: 3, message: "Registration number must be at least 3 characters" }
+                                { min: 3, message: "Registration number must be at least 3 characters" },
                             ]}
                         >
                             <Input placeholder="Enter registration number" prefix={<IdcardOutlined />} />
                         </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item
-                            label="Is Active"
-                            name="isActive"
-                            valuePropName="checked"
-                        >
-                            <Switch
-                                checkedChildren="Active"
-                                unCheckedChildren="Inactive"
-                                defaultChecked
-                            />
-                        </Form.Item>
-                    </Col>
+                    </Col>                   
                 </Row>
 
                 <Divider />
 
                 <Form.Item style={{ marginBottom: 0 }}>
                     <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-                        <Button onClick={() => navigate("/vendor")}>
-                            Cancel
-                        </Button>
+                        <Button onClick={() => navigate("/vendor")}>Cancel</Button>
                         <Button
                             type="primary"
                             icon={<SaveOutlined />}
-                            loading={loading}
+                            loading={creating}
                             onClick={handleSubmit}
                         >
                             Create Vendor
