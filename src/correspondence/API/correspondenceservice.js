@@ -27,25 +27,36 @@ export const getCorrespondenceApi = async (filters = {}) => {
   if (filters.fiscalYear) params.append('fiscalYear', filters.fiscalYear);
   if (filters.department) params.append('department', filters.department);
   if (filters.user) params.append('user', filters.user);
-  const orgId = filters.organizationId || filters.orgid || getStoredOrgId();
-
-  if (orgId) {
-    params.append('organizationId', orgId);
-    params.append('orgid', orgId);
-  }
-  
+  const orgId = filters.organizationId || getStoredOrgId();
+  if (orgId) params.append('organizationId', orgId);
   const query = params.toString() ? `?${params.toString()}` : '';
   const res = await api.get(`/correspondence/list${query}`);
   return res.data?.data || [];
 };
 
 export const createCorrespondenceApi = async (payload) => {
-  const orgId = payload.organizationId || payload.orgid || getStoredOrgId();
+  const orgId = payload.organizationId || getStoredOrgId();
   const res = await api.post('/correspondence/new', {
     ...payload,
-    ...(orgId ? { organizationId: orgId, orgid: orgId } : {}),
+    ...(orgId ? { organizationId: orgId } : {}),
   });
   return res.data?.data;
+};
+
+export const batchCreateOutgoingApi = async ({ count = 1, remarks, departmentId }) => {
+  const generated = [];
+  const orgId = getStoredOrgId();
+  const safeCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 50);
+  for (let i = 0; i < safeCount; i++) {
+    const res = await createCorrespondenceApi({
+      type: 'outgoing',
+      remarks: remarks || null,
+      departmentId: departmentId || null,
+      organizationId: orgId,
+    });
+    if (res) generated.push(res);
+  }
+  return generated;
 };
 
 export const updateHandoverStatusApi = async ({ key, referenceId, handoverStatus, handoverBy, handoverDate }) => {
@@ -73,12 +84,18 @@ export const getDepartmentsApi = async (orgId) => {
   }
 };
 
-export const getUsersApi = async (orgId) => {
+export const getUsersApi = async (orgId, departmentId) => {
   const resolvedOrgId = orgId || getStoredOrgId();
   try {
+    const payload = {};
+    if (resolvedOrgId) payload.OrganizationId = resolvedOrgId;
+    if (departmentId) {
+      payload.Department = departmentId;
+      payload.DepartmentId = departmentId;
+    }
     const res = await api.post(
       '/users/getUserList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
+      payload
     );
     return res.data?.data || [];
   } catch (err) {
@@ -100,4 +117,3 @@ export const getVendorsApi = async (orgId) => {
     return [];
   }
 };
-

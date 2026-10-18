@@ -77,7 +77,6 @@ const NepaliDatePicker = ({
     return {
       bsValue: adToBsString(str),
       adValue: str.split('T')[0].split(' ')[0],
-
     };
   }, [value]);
 
@@ -94,7 +93,6 @@ const NepaliDatePicker = ({
   const handleAdChange = useCallback((dateObj, dateString) => {
     if (!dateString) {
       if (onChange) onChange('');
-      
       return;
     }
     const bsEquivalent = adToBsString(dateString);

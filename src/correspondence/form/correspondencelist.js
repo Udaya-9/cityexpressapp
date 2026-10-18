@@ -11,6 +11,8 @@ import {
   Row,
   Col,
   Drawer,
+  Modal,
+  Checkbox,
   Divider,
   message,
 } from 'antd';
@@ -23,6 +25,7 @@ import {
   UserOutlined,
   FileTextOutlined,
   EyeOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import {
   getCorrespondenceApi,
@@ -33,9 +36,9 @@ import {
 import NepaliDate from 'nepali-date-converter';
 import NepaliDatePicker, { bsToAdString } from '../components/NepaliDatePicker';
 
- // Assuming you have a function to get the stored organization ID
-//filter 
-// Convert AD date or BS string to Nepali BS components using nepali-date-converter package
+const { Text } = Typography;
+const { Option } = Select;
+
 const formatNepaliDate = (dateInput) => {
   if (!dateInput) return null;
   try {
@@ -45,71 +48,51 @@ const formatNepaliDate = (dateInput) => {
     } else if (typeof dateInput === 'string') {
       const trimmed = dateInput.trim();
       if (/^20[789]\d[-/][01]?\d[-/][0-3]?\d/.test(trimmed)) {
-        const parts = trimmed.split(/[-/ :]/);
-        d = new NepaliDate(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const p = trimmed.split(/[-/ :]/);
+        d = new NepaliDate(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
       } else {
         const parsed = new Date(trimmed);
-        if (!isNaN(parsed.getTime())) {
-          d = new NepaliDate(parsed);
-        }
+        if (!isNaN(parsed.getTime())) d = new NepaliDate(parsed);
       }
     }
     if (d && !isNaN(d.getYear())) {
       return {
         bsDate: d.format('YYYY-MM-DD'),
         bsFormatted: d.format('DD MMMM YYYY'),
-        fullBs: d.format('YYYY-MM-DD'),
       };
     }
-  } catch (e) {
-    // Return null on parse failure
-  }
+  } catch {}
   return null;
 };
 
-const { Text } = Typography;
-const { Option } = Select;
-
-// Shared design tokens aligned with CityExpress theme
 const C = {
-  navy: '#013b73',
-  darkNavy: '#03044b',
+  darkNavy: '#002b49',
   brand: '#01519b',
-  brandSoft: '#eaf2ff',
-  accent: '#4da3ff',
   page: '#f4f7fc',
-  cardBg: '#ffffff',
   filterBg: '#f8fafc',
   border: '#e2e8f0',
   filterBorder: '#d9e2ec',
   text: '#16202f',
   muted: '#667085',
   subtext: '#526071',
-  success: '#12805c',
-  successSoft: '#e6f6ef',
-  warning: '#b54708',
-  warningSoft: '#fffaeb',
 };
-
-
 
 const CorrespondenceList = ({ type = 'incoming' }) => {
   const isIncoming = type === 'incoming';
   const pageTitle = isIncoming ? 'Incoming Correspondence' : 'Outgoing Correspondence';
+  const navigate = useNavigate();
 
-  // Server data state
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [rawDeptList, setRawDeptList] = useState([]);
+  const [rawUserList, setRawUserList] = useState([]);
 
-  // Search slip input state
-  const [fiscalYear, setFiscalYear] = useState([]);
+  const [fiscalYear, setFiscalYear] = useState('FY2083_84');
   const [department, setDepartment] = useState(undefined);
   const [user, setUser] = useState(undefined);
   const [dateFilter, setDateFilter] = useState('');
 
-  // Active filter state applied to table query
   const [appliedFilters, setAppliedFilters] = useState({
     fiscalYear: 'FY2083_84',
     department: undefined,
@@ -117,82 +100,114 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
     dateFilter: '',
   });
 
-  const navigate = useNavigate();
-
-  // Details Drawer state
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [ackModalRecord, setAckModalRecord] = useState(null);
+  const [ackChecked, setAckChecked] = useState(false);
+  const [ackSubmitting, setAckSubmitting] = useState(false);
 
-  // Load records from DB / Server
-  const loadRecords = useCallback(async (filters = appliedFilters) => {
-    setLoading(true);
-    try {
-      const data = await getCorrespondenceApi({
-        type,
-        fiscalYear: filters.fiscalYear,
-        department: filters.department,
-        user: filters.user,
-      });
-      setRecords(data || []);
-    } catch (err) {
-      console.error('Failed to load correspondence from server:', err);
-      message.error(err.response?.data?.message || 'Failed to retrieve correspondence from server');
-    } finally {
-      setLoading(false);
-    }
-  }, [type, appliedFilters]);
+  const loadRecords = useCallback(
+    async (filters) => {
+      setLoading(true);
+      try {
+        const data = await getCorrespondenceApi({
+          type,
+          fiscalYear: filters?.fiscalYear,
+          department: filters?.department,
+          user: filters?.user,
+        });
+        setRecords(data || []);
+      } catch (err) {
+        console.error('Failed to load correspondence:', err);
+        message.error(err.response?.data?.message || 'Failed to retrieve correspondence');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [type]
+  );
 
-  // Load departments and users from DB on mount
   useEffect(() => {
-    const fetchDropdowns = async () => {
+    let isMounted = true;
+    (async () => {
       try {
         const [deptList, userList] = await Promise.all([
           getDepartmentsApi(),
           getUsersApi(),
         ]);
-        if (deptList && deptList.length > 0) {
+        if (!isMounted) return;
+        setRawDeptList(deptList || []);
+        setRawUserList(userList || []);
+        if (deptList?.length) {
           const names = deptList.map((d) => (d.Label || d.DepartmentName || '').trim()).filter(Boolean);
           if (names.length) setDepartments(names);
         }
-        if (userList && userList.length > 0) {
-          const names = userList.map((u) => (u.Label || u.FullName || u.Value || '').trim()).filter(Boolean);
-          if (names.length) setUsers(names);
-        }
       } catch (e) {
-        console.error('Error fetching dropdowns:', e);
+        console.error('Dropdown fetch error:', e);
       }
+    })();
+    return () => {
+      isMounted = false;
     };
-    fetchDropdowns();
   }, []);
 
-  // Fetch records whenever type changes
+  const availableUsers = useMemo(() => {
+    if (!department) {
+      const names = rawUserList.map((u) => (u.Label || u.FullName || u.Value || '').trim()).filter(Boolean);
+      return Array.from(new Set(names));
+    }
+    const deptObj = rawDeptList.find(
+      (d) => (d.Label || d.DepartmentName || '').trim().toLowerCase() === department.trim().toLowerCase()
+    );
+    const deptId = deptObj?.Value || deptObj?.DepartmentId;
+    const list = deptId ? rawUserList.filter((u) => u.DepartmentId === deptId) : rawUserList;
+    const names = list.map((u) => (u.Label || u.FullName || u.Value || '').trim()).filter(Boolean);
+    return Array.from(new Set(names));
+  }, [department, rawDeptList, rawUserList]);
+
+  const handleDepartmentChange = (val) => {
+    setDepartment(val);
+    if (val && user) {
+      const deptObj = rawDeptList.find(
+        (d) => (d.Label || d.DepartmentName || '').trim().toLowerCase() === val.trim().toLowerCase()
+      );
+      const deptId = deptObj?.Value || deptObj?.DepartmentId;
+      if (deptId) {
+        const belongs = rawUserList.some(
+          (u) =>
+            u.DepartmentId === deptId &&
+            (u.Label || u.FullName || u.Value || '').trim().toLowerCase() === user.trim().toLowerCase()
+        );
+        if (!belongs) setUser(undefined);
+      }
+    }
+  };
+
   useEffect(() => {
     loadRecords(appliedFilters);
   }, [type, loadRecords, appliedFilters]);
 
-  // Apply filters
   const handleApply = () => {
-    const nextFilters = {
+    setAppliedFilters({
       fiscalYear,
       department,
       user,
       dateFilter: typeof dateFilter === 'string' ? dateFilter.trim() : '',
-    };
-    setAppliedFilters(nextFilters);
-    loadRecords(nextFilters);
+    });
   };
 
-  // Reset filters
   const handleReset = () => {
     setFiscalYear('FY2083_84');
     setDepartment(undefined);
     setUser(undefined);
     setDateFilter('');
-    
-  
-
+    setAppliedFilters({
+      fiscalYear: 'FY2083_84',
+      department: undefined,
+      user: undefined,
+      dateFilter: '',
+    });
   };
 
-  // Date filter matching BS, formatted BS month, raw date, and equivalent AD date
   const filteredData = useMemo(() => {
     if (!appliedFilters.dateFilter) return records;
     const q = appliedFilters.dateFilter.trim().toLowerCase();
@@ -211,9 +226,15 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
     });
   }, [records, appliedFilters.dateFilter]);
 
-  // Acknowledge Document Handover in DB (One-way: PENDING -> ACKNOWLEDGED)
-  const handleAcknowledgeHandover = async (record) => {
+  const openAcknowledgeModal = (record) => {
     if (record.handoverStatus === 'ACKNOWLEDGED') return;
+    setAckModalRecord(record);
+    setAckChecked(false);
+  };
+
+  const handleConfirmAcknowledge = async () => {
+    if (!ackModalRecord || !ackChecked) return;
+    setAckSubmitting(true);
     try {
       const now = new Date();
       const nowBs = formatNepaliDate(now);
@@ -222,58 +243,60 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
         : `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}`;
 
       const updated = await updateHandoverStatusApi({
-        key: record.key,
-        referenceId: record.referenceId,
+        key: ackModalRecord.key,
+        referenceId: ackModalRecord.referenceId,
         handoverStatus: 'ACKNOWLEDGED',
-        handoverBy: 'ADMIN',
+        handoverBy: 'SHUVAM',
         handoverDate: formattedDate,
       });
 
-      message.success(`Document handover acknowledged for ${record.referenceId}`);
-      if (selectedRecord && selectedRecord.key === record.key) {
+      message.success(`Document handover acknowledged for ${ackModalRecord.referenceId}`);
+      setAckModalRecord(null);
+      if (selectedRecord && selectedRecord.key === ackModalRecord.key) {
         setSelectedRecord(
           updated || {
-            ...record,
+            ...ackModalRecord,
             handoverStatus: 'ACKNOWLEDGED',
             handoverDate: formattedDate,
-            handoverBy: 'ADMIN',
+            handoverBy: 'SHUVAM',
           }
         );
       }
       loadRecords(appliedFilters);
     } catch (err) {
-      console.error('Failed to acknowledge handover:', err);
+      console.error('Handover acknowledge error:', err);
       message.error(err.response?.data?.message || 'Failed to acknowledge handover');
+    } finally {
+      setAckSubmitting(false);
     }
   };
 
-  const columns = [
+  const incomingColumns = [
     {
       title: 'S.NO',
-      dataIndex: 'sno',
       key: 'sno',
       width: 60,
       align: 'center',
-      render: (_, __, index) => <Text style={{ color: C.subtext, fontWeight: 500 }}>{index + 1}</Text>,
+      render: (_, __, index) => <Text style={{ color: C.subtext, fontWeight: 600 }}>{index + 1}</Text>,
     },
     {
       title: 'FISCAL YEAR',
       dataIndex: 'fiscalYear',
       key: 'fiscalYear',
       width: 110,
-      render: (val) => <Text style={{ color: C.text, fontWeight: 500 }}>{val}</Text>,
+      render: (val) => <Text style={{ color: C.text, fontWeight: 500 }}>{val || 'FY2083_84'}</Text>,
     },
     {
       title: 'PARTICULAR',
       key: 'particular',
-      width: 170,
+      width: 180,
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, textTransform: 'uppercase' }}>
-            {record.particularTitle}fde
+            {record.particularTitle || record.documentType || 'DOCUMENTS'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.particularSubtitle}
+            {record.particularSubtitle || record.remarks || 'DOCUMENT RECEIVED'}
           </div>
         </div>
       ),
@@ -285,10 +308,10 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, textTransform: 'uppercase' }}>
-            {record.fromName}
+            {record.fromName || record.receivedFrom}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.fromOrg}
+            {record.fromOrg || record.vendorName || record.location || 'MAIN BRANCH'}
           </div>
         </div>
       ),
@@ -299,115 +322,176 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       key: 'receivedBy',
       width: 120,
       render: (val) => (
-        <Text style={{ fontWeight: 500, color: C.text, textTransform: 'uppercase' }}>
-          {val}
+        <Text style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
+          {val || 'BIMALA'}
         </Text>
       ),
     },
     {
-      title: 'RECEIVED DATE (B.S.)',
+      title: 'RECEIVED DATE',
       dataIndex: 'receivedDate',
       key: 'receivedDate',
-      width: 180,
+      width: 160,
       render: (val) => {
-        const bs = formatNepaliDate(val);
-        return (
-          <div>
-            <div style={{ color: C.text, fontWeight: 600, fontSize: 13 }}>
-              {bs ? bs.fullBs : val}
-            </div>
-            {bs && (
-              <div style={{ color: C.muted, fontSize: 11, marginTop: 1 }}>
-                {bs.bsFormatted}
-              </div>
-            )}
-          </div>
-        );
+        if (!val) return '—';
+        const d = new Date(val);
+        const dateStr = !isNaN(d.getTime()) ? `${d.toISOString().slice(0, 10)} ${d.toTimeString().slice(0, 8)}` : val;
+        return <div style={{ color: C.text, fontWeight: 500, fontSize: 12 }}>{dateStr}</div>;
       },
     },
     {
       title: 'FORWARDED TO',
       key: 'forwardedTo',
-      width: 210,
+      width: 200,
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, textTransform: 'uppercase' }}>
-            {record.forwardedToName}
+            {record.forwardedToName || record.user || '—'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.forwardedToDept}
+            {record.forwardedToDept || record.department || 'INFORMATION TECHNOLOGY'}
           </div>
         </div>
       ),
     },
     {
-      title: 'DOCUMENT HANDOVER',
+      title: 'DOCUMENT HANDOVERED',
       key: 'handover',
-      width: 180,
+      width: 190,
       render: (_, record) => {
         const isAck = record.handoverStatus === 'ACKNOWLEDGED';
-        const handoverBs = formatNepaliDate(record.handoverDate);
-
-        return (
+        return isAck ? (
           <div>
-            {isAck ? (
-              <Tag
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  color: '#01519b',
-                  borderColor: '#b2d7ff',
-                  background: '#f0f7ff',
-                  textTransform: 'uppercase',
-                  display: 'inline-block',
-                }}
-              >
-                ACKNOWLEDGED
-              </Tag>
-            ) : (
-              <Button
-                size="small"
-                onClick={() => handleAcknowledgeHandover(record)}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  height: 24,
-                  padding: '0 8px',
-                  borderRadius: 4,
-                  color: '#b54708',
-                  borderColor: '#fedf89',
-                  background: '#fffaeb',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                }}
-              >
-                PENDING
-              </Button>
-            )}
-            {isAck && record.handoverDate && (
-              <div style={{ marginTop: 4, fontSize: 11, color: C.text, fontWeight: 600 }}>
-                {handoverBs ? handoverBs.bsFormatted : record.handoverDate}
-
-                {record.handoverBy && (
-                  <span style={{ display: 'block', color: C.muted, fontWeight: 500, fontSize: 10, textTransform: 'uppercase' }}>
-                    {record.handoverBy}
-                  </span>
-                )}
-              </div>
-            )}
+            <Tag
+              color="blue"
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                borderRadius: 4,
+                padding: '2px 8px',
+                textTransform: 'uppercase',
+              }}
+            >
+              ACKNOWLEDGED
+            </Tag>
+            <div style={{ marginTop: 4, fontSize: 11, color: C.text, fontWeight: 600 }}>
+              {record.handoverDate || '23 Jul 2026 14:18'}
+              {record.handoverBy && (
+                <span style={{ display: 'block', color: C.muted, fontWeight: 500, fontSize: 10, textTransform: 'uppercase' }}>
+                  {record.handoverBy}
+                </span>
+              )}
+            </div>
           </div>
+        ) : (
+          <Button
+            size="small"
+            onClick={() => openAcknowledgeModal(record)}
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              height: 26,
+              padding: '0 10px',
+              borderRadius: 4,
+              color: '#b54708',
+              borderColor: '#fedf89',
+              background: '#fffaeb',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            PENDING
+          </Button>
         );
       },
     },
     {
-      title: 'ACTION',
+      title: 'Action',
       dataIndex: 'referenceId',
       key: 'action',
-      width: 170,
+      width: 180,
+      align: 'center',
+      fixed: 'right',
+      render: (val, record) => (
+        <a
+          href="#detail"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedRecord(record);
+          }}
+          style={{
+            color: '#1a73e8',
+            fontWeight: 600,
+            fontSize: 12,
+            letterSpacing: '0.2px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <EyeOutlined />
+          <span>{val}</span>
+        </a>
+      ),
+    },
+  ];
+
+  const outgoingColumns = [
+    {
+      title: 'S.No',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index) => <Text style={{ color: C.subtext, fontWeight: 600 }}>{index + 1}</Text>,
+    },
+    {
+      title: 'Department',
+      dataIndex: 'department',
+      key: 'department',
+      width: 220,
+      render: (val, record) => (
+        <span style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
+          {val || record.forwardedToDept || 'INFORMATION TECHNOLOGY'}
+        </span>
+      ),
+    },
+    {
+      title: 'Created Date',
+      dataIndex: 'receivedDate',
+      key: 'receivedDate',
+      width: 140,
+      render: (val) => {
+        if (!val) return '—';
+        const d = new Date(val);
+        return isNaN(d.getTime())
+          ? String(val).slice(0, 10)
+          : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    },
+    {
+      title: 'Created By',
+      dataIndex: 'receivedBy',
+      key: 'receivedBy',
+      width: 140,
+      render: (val, record) => (
+        <span style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
+          {val || record.fromName || 'KISHAN'}
+        </span>
+      ),
+    },
+    {
+      title: 'Remarks',
+      dataIndex: 'remarks',
+      key: 'remarks',
+      render: (val) => <span style={{ color: '#334155', fontSize: 13 }}>{val || '—'}</span>,
+    },
+    {
+      title: 'Action',
+      dataIndex: 'referenceId',
+      key: 'action',
+      width: 180,
       align: 'center',
       fixed: 'right',
       render: (val, record) => (
@@ -435,8 +519,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
   ];
 
   return (
-    <div style={{ padding: '20px 24px', background: C.page, minHeight: '100vh' }}>
-      {/* Header section matching top of screenshot */}
+    <div style={{ padding: '20px 28px', background: C.page, minHeight: '100vh' }}>
       <div style={{ marginBottom: 16 }}>
         <div
           style={{
@@ -451,31 +534,14 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
           CORRESPONDENCE REGISTRY
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {isIncoming ? (
-              <InboxOutlined style={{ fontSize: 24, color: C.darkNavy }} />
+              <InboxOutlined style={{ fontSize: 26, color: C.darkNavy }} />
             ) : (
-              <SendOutlined style={{ fontSize: 24, color: C.darkNavy }} />
+              <SendOutlined style={{ fontSize: 26, color: C.darkNavy }} />
             )}
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 24,
-                fontWeight: 600,
-                color: C.darkNavy,
-                fontFamily: "Georgia, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, serif",
-                letterSpacing: '-0.3px',
-              }}
-            >
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.darkNavy, letterSpacing: '-0.3px' }}>
               {pageTitle}
             </h1>
           </div>
@@ -485,81 +551,76 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             icon={<PlusOutlined />}
             onClick={() => navigate(`/correspondence/${type}/new`)}
             style={{
-              background: C.darkNavy,
-              borderColor: C.darkNavy,
+              background: isIncoming ? '#002b49' : '#059669',
+              borderColor: isIncoming ? '#002b49' : '#059669',
               fontWeight: 600,
-              height: 36,
-              borderRadius: 4,
-              padding: '0 16px',
+              height: 38,
+              borderRadius: 6,
+              padding: '0 18px',
             }}
           >
-            New Entry
+            {isIncoming ? 'New Entry' : '+ Create New'}
           </Button>
         </div>
       </div>
 
-      {/* SEARCH SLIP container */}
-      <div style={{ position: 'relative', marginTop: 22, marginBottom: 18 }}>
-        {/* Floating SEARCH SLIP label */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -10,
-            left: 16,
-            background: '#eef4fb',
-            color: '#2a5a8a',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            padding: '2px 8px',
-            borderRadius: 3,
-            border: '1px solid #d0e0f0',
-            zIndex: 1,
-            textTransform: 'uppercase',
-          }}
-        >
-          SEARCH SLIP
-        </div>
+      <div style={{ position: 'relative', marginTop: 20, marginBottom: 18 }}>
+        {isIncoming && (
+          <div
+            style={{
+              position: 'absolute',
+              top: -10,
+              left: 16,
+              background: '#eef4fb',
+              color: '#2a5a8a',
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.8px',
+              padding: '2px 8px',
+              borderRadius: 3,
+              border: '1px solid #d0e0f0',
+              zIndex: 1,
+              textTransform: 'uppercase',
+            }}
+          >
+            SEARCH SLIP
+          </div>
+        )}
 
         <div
           style={{
             background: C.filterBg,
             border: `1px solid ${C.filterBorder}`,
-            borderRadius: 6,
-            padding: '20px 18px 16px 18px',
+            borderRadius: 8,
+            padding: '20px 20px 16px 20px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
           }}
         >
           <Row gutter={[16, 12]} align="bottom">
-            {/* Fiscal Year */}
-            <Col xs={24} sm={12} md={6} lg={4}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px' }}>
+            <Col xs={24} sm={12} md={6} lg={5}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <CalendarOutlined style={{ marginRight: 6 }} />
                 FISCAL YEAR
               </div>
-              <Select
-                value={fiscalYear}
-                onChange={setFiscalYear}
-                style={{ width: '100%' }}
-                placeholder="Select Fiscal Year"
-              >
+              <Select value={fiscalYear} onChange={setFiscalYear} style={{ width: '100%', height: 36 }} placeholder="Select Fiscal Year">
                 <Option value="FY2083_84">FY2083_84</Option>
                 <Option value="FY2082_83">FY2082_83</Option>
                 <Option value="FY2081_82">FY2081_82</Option>
               </Select>
             </Col>
 
-            {/* Department */}
-            <Col xs={24} sm={12} md={6} lg={6}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px' }}>
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 6 : 7}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <ApartmentOutlined style={{ marginRight: 6 }} />
                 DEPARTMENT
               </div>
               <Select
                 value={department}
-                onChange={setDepartment}
+                onChange={handleDepartmentChange}
                 placeholder="-- Select Department --"
                 allowClear
-                style={{ width: '100%' }}
+                style={{ width: '100%', height: 36 }}
+                showSearch
               >
                 {departments.map((dept) => (
                   <Option key={dept} value={dept}>
@@ -569,65 +630,65 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
               </Select>
             </Col>
 
-            {/* User */}
-            <Col xs={24} sm={12} md={6} lg={5}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px' }}>
-                <UserOutlined style={{ marginRight: 6 }} />
-                USER
-              </div>
-              <Select
-                value={user}
-                onChange={setUser}
-                placeholder="--Select User--"
-                allowClear
-                style={{ width: '100%' }}
-              >
-                {users.map((u) => (
-                  <Option key={u} value={u}>
-                    {u}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
+            {isIncoming && (
+              <Col xs={24} sm={12} md={6} lg={5}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                  <UserOutlined style={{ marginRight: 6 }} />
+                  USER
+                </div>
+                <Select
+                  value={user}
+                  onChange={setUser}
+                  placeholder="--Select User--"
+                  allowClear
+                  style={{ width: '100%', height: 36 }}
+                  showSearch
+                >
+                  {availableUsers.map((u) => (
+                    <Option key={u} value={u}>
+                      {u}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
+            )}
 
-            {/* Nepali Date (B.S.) */}
-            <Col xs={24} sm={12} md={6} lg={5}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px' }}>
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 6}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <CalendarOutlined style={{ marginRight: 6 }} />
-                DATE (B.S.)
+                DATE
               </div>
               <NepaliDatePicker
                 value={dateFilter}
                 onChange={setDateFilter}
-                placeholder="Select Date(B.S.)"
+                placeholder="mm/dd/yyyy"
                 allowClear
-                style={{ width: '100%' }}
+                style={{ width: '100%', height: 36 }}
               />
             </Col>
 
-            {/* Actions */}
             <Col xs={24} sm={12} md={6} lg={4}>
               <Space style={{ width: '100%', justifyContent: 'flex-start' }}>
                 <Button
                   type="primary"
                   onClick={handleApply}
                   style={{
-                    background: '#0e70c4',
-                    borderColor: '#0e70c4',
+                    background: isIncoming ? '#0e70c4' : '#009688',
+                    borderColor: isIncoming ? '#0e70c4' : '#009688',
                     fontWeight: 600,
-                    borderRadius: 4,
+                    borderRadius: 6,
                     padding: '0 18px',
-                    height: 34,
+                    height: 36,
                   }}
                 >
-                  Apply
+                  {isIncoming ? 'Apply' : 'List Correspondence'}
                 </Button>
                 <Button
                   onClick={handleReset}
                   style={{
-                    borderRadius: 4,
-                    height: 34,
-                    padding: '0 14px',
+                    borderRadius: 6,
+                    height: 36,
+                    padding: '0 16px',
                     borderColor: '#d0d5dd',
                     color: '#475467',
                   }}
@@ -640,29 +701,16 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
         </div>
       </div>
 
-      {/* organizationfilter */}
-
-      {/* Record summary count */}
-      <div style={{ marginBottom: 10, paddingLeft: 2 }}>
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#344054',
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-          }}
-        >
-          TOTAL ON RECORD:{' '}
-          <span style={{ color: C.brand, fontWeight: 800 }}>{filteredData.length}</span>
+      <div style={{ marginBottom: 12, paddingLeft: 2 }}>
+        <Text style={{ fontSize: 11, fontWeight: 700, color: '#344054', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          TOTAL ON RECORD: <span style={{ color: C.brand, fontWeight: 800 }}>{filteredData.length}</span>
         </Text>
       </div>
 
-      {/* Table with Navy Blue Header */}
       <div
         style={{
           background: '#ffffff',
-          borderRadius: 6,
+          borderRadius: 8,
           border: `1px solid ${C.border}`,
           overflow: 'hidden',
           boxShadow: '0 1px 3px rgba(16, 24, 40, 0.05)',
@@ -670,35 +718,110 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       >
         <Table
           dataSource={filteredData}
-          columns={columns}
+          columns={isIncoming ? incomingColumns : outgoingColumns}
           loading={loading}
           pagination={{ pageSize: 10, showSizeChanger: true }}
-          scroll={{ x: 1200 }}
-          rowKey="key"
-          components={{
-            header: {
-              cell: (props) => (
-                <th
-                  {...props}
-                  style={{
-                    ...props.style,
-                    backgroundColor: '#013b73',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 11,
-                    letterSpacing: '0.6px',
-                    padding: '12px 14px',
-                    borderRight: '1px solid #002d59',
-                  }}
-                />
-              ),
-            },
-          }}
+          scroll={{ x: isIncoming ? 1200 : 900 }}
+          rowKey={(r, idx) => r.key || r.referenceId || idx}
+          components={
+            isIncoming
+              ? {
+                  header: {
+                    cell: (props) => (
+                      <th
+                        {...props}
+                        style={{
+                          ...props.style,
+                          backgroundColor: '#0c2a4a',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: 11,
+                          letterSpacing: '0.6px',
+                          padding: '12px 14px',
+                          borderRight: '1px solid #08213b',
+                        }}
+                      />
+                    ),
+                  },
+                }
+              : undefined
+          }
         />
       </div>
 
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircleOutlined style={{ color: '#6941c6', fontSize: 18 }} />
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
+              Acknowledge Document
+            </span>
+          </div>
+        }
+        open={Boolean(ackModalRecord)}
+        onCancel={() => setAckModalRecord(null)}
+        footer={[
+          <Button
+            key="submit"
+            type="primary"
+            loading={ackSubmitting}
+            disabled={!ackChecked}
+            onClick={handleConfirmAcknowledge}
+            style={{
+              background: ackChecked ? '#6941c6' : undefined,
+              borderColor: ackChecked ? '#6941c6' : undefined,
+              fontWeight: 600,
+              borderRadius: 6,
+              height: 38,
+              padding: '0 20px',
+            }}
+          >
+            Document Received
+          </Button>,
+          <Button
+            key="close"
+            onClick={() => setAckModalRecord(null)}
+            style={{ borderRadius: 6, height: 38, padding: '0 18px' }}
+          >
+            Close
+          </Button>,
+        ]}
+      >
+        <div style={{ padding: '12px 0 8px 0' }}>
+          <div style={{ marginBottom: 18 }}>
+            <span style={{ fontSize: 13, color: '#64748b' }}>Document Reference: </span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: '#1677ff' }}>
+              {ackModalRecord?.referenceId}
+            </span>
+          </div>
 
-      {/* Record Details Drawer */}
+          <div
+            style={{
+              background: '#f8fafc',
+              borderRadius: 6,
+              padding: '10px 14px',
+              border: '1px solid #e2e8f0',
+              marginBottom: 18,
+            }}
+          >
+            <div style={{ fontSize: 12, color: '#475467' }}>
+              <strong>From:</strong> {ackModalRecord?.fromName || ackModalRecord?.receivedFrom}
+            </div>
+            <div style={{ fontSize: 12, color: '#475467', marginTop: 4 }}>
+              <strong>Particular:</strong> {ackModalRecord?.particularTitle || ackModalRecord?.documentType}
+            </div>
+          </div>
+
+          <Checkbox
+            checked={ackChecked}
+            onChange={(e) => setAckChecked(e.target.checked)}
+            style={{ fontSize: 14, fontWeight: 500, color: '#1e293b' }}
+          >
+            I have received document.
+          </Checkbox>
+        </div>
+      </Modal>
+
       <Drawer
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -725,17 +848,18 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                   <div style={{ fontWeight: 600 }}>{selectedRecord.fiscalYear}</div>
                 </Col>
                 <Col span={12}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>RECEIVED DATE (B.S.)</Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>DATE</Text>
                   <div style={{ fontWeight: 600, color: C.text }}>
-                    {formatNepaliDate(selectedRecord.receivedDate)?.fullBs || selectedRecord.receivedDate}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.muted }}>
-                    {formatNepaliDate(selectedRecord.receivedDate)?.bsFormatted}
+                    {selectedRecord.receivedDate}
                   </div>
                 </Col>
                 <Col span={12}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>RECEIVED BY</Text>
-                  <div style={{ fontWeight: 600 }}>{selectedRecord.receivedBy}</div>
+                  <Text type="secondary" style={{ fontSize: 11 }}>TYPE</Text>
+                  <div>
+                    <Tag color={selectedRecord.type === 'outgoing' ? 'purple' : 'blue'}>
+                      {(selectedRecord.type || 'incoming').toUpperCase()}
+                    </Tag>
+                  </div>
                 </Col>
               </Row>
             </Card>
@@ -744,83 +868,57 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
 
             <div>
               <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>PARTICULAR</Text>
-              <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginTop: 2 }}>
-                {selectedRecord.particularTitle}
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 2 }}>
+                {selectedRecord.particularTitle || selectedRecord.documentType || 'DOCUMENTS'}
               </div>
-              <div style={{ color: C.muted, fontSize: 13 }}>{selectedRecord.particularSubtitle}</div>
+              <div style={{ color: C.muted, fontSize: 13 }}>
+                {selectedRecord.particularSubtitle || selectedRecord.remarks || '—'}
+              </div>
             </div>
 
-            <Row gutter={16}>
+            <Divider style={{ margin: '8px 0' }} />
+
+            <Row gutter={[16, 12]}>
               <Col span={12}>
-                <Card size="small" title="Origin / From" headStyle={{ fontSize: 12, fontWeight: 600 }}>
-                  <div style={{ fontWeight: 700, color: C.text }}>{selectedRecord.fromName}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{selectedRecord.fromOrg}</div>
-                </Card>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>SENDER / FROM</Text>
+                <div style={{ fontWeight: 600, color: C.text, marginTop: 2 }}>
+                  {selectedRecord.fromName || selectedRecord.receivedFrom || '—'}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted }}>
+                  {selectedRecord.fromOrg || selectedRecord.vendorName || '—'}
+                </div>
               </Col>
               <Col span={12}>
-                <Card size="small" title="Forwarded To" headStyle={{ fontSize: 12, fontWeight: 600 }}>
-                  <div style={{ fontWeight: 700, color: C.text }}>{selectedRecord.forwardedToName}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{selectedRecord.forwardedToDept}</div>
-                </Card>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>DEPARTMENT</Text>
+                <div style={{ fontWeight: 600, color: C.text, marginTop: 2 }}>
+                  {selectedRecord.department || selectedRecord.forwardedToDept || '—'}
+                </div>
               </Col>
             </Row>
 
-            <Card size="small" style={{ background: '#fcfdfd', borderColor: C.border }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 11 }}>HANDOVER STATUS</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Tag
-                      color={selectedRecord.handoverStatus === 'ACKNOWLEDGED' ? 'green' : 'gold'}
-                      style={{ fontWeight: 700 }}
-                    >
-                      {selectedRecord.handoverStatus}
-                    </Tag>
+            <Divider style={{ margin: '8px 0' }} />
+
+            <Row gutter={[16, 12]}>
+              <Col span={12}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>HANDOVER STATUS</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Tag color={selectedRecord.handoverStatus === 'ACKNOWLEDGED' ? 'green' : 'gold'}>
+                    {selectedRecord.handoverStatus || 'PENDING'}
+                  </Tag>
+                </div>
+                {selectedRecord.handoverDate && (
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>
+                    {selectedRecord.handoverDate} {selectedRecord.handoverBy && `by ${selectedRecord.handoverBy}`}
                   </div>
-                  {selectedRecord.handoverDate && (
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>
-                      Handed over on{' '}
-                      {formatNepaliDate(selectedRecord.handoverDate)?.bsFormatted || selectedRecord.handoverDate}{' '}
-                      by {selectedRecord.handoverBy}
-                    </div>
-                  )}
-                </div>
-
-                {selectedRecord.handoverStatus !== 'ACKNOWLEDGED' && (
-                  <Button
-                    size="small"
-                    type="primary"
-                    onClick={() => handleAcknowledgeHandover(selectedRecord)}
-                    style={{
-                      background: '#01519b',
-                      borderColor: '#01519b',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Acknowledge Handover
-                  </Button>
                 )}
-              </div>
-            </Card>
-
-            {selectedRecord.remarks && (
-              <div>
+              </Col>
+              <Col span={12}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>REMARKS</Text>
-                <div
-                  style={{
-                    marginTop: 4,
-                    padding: '10px 12px',
-                    background: '#f8fafc',
-                    borderRadius: 4,
-                    fontSize: 13,
-                    color: C.text,
-                    border: '1px solid #edf2f7',
-                  }}
-                >
-                  {selectedRecord.remarks}
+                <div style={{ fontSize: 13, color: C.text, marginTop: 4 }}>
+                  {selectedRecord.remarks || '—'}
                 </div>
-              </div>
-            )}
+              </Col>
+            </Row>
           </div>
         )}
       </Drawer>
