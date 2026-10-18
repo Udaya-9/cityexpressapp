@@ -43,7 +43,7 @@ export const createCorrespondenceApi = async (payload) => {
   return res.data?.data;
 };
 
-export const batchCreateOutgoingApi = async ({ count = 1, remarks, departmentId }) => {
+export const batchCreateOutgoingApi = async ({ count = 1, remarks, departmentId, createdBy }) => {
   const generated = [];
   const orgId = getStoredOrgId();
   const safeCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), 50);
@@ -53,6 +53,7 @@ export const batchCreateOutgoingApi = async ({ count = 1, remarks, departmentId 
       remarks: remarks || null,
       departmentId: departmentId || null,
       organizationId: orgId,
+      createdBy: createdBy || null,
     });
     if (res) generated.push(res);
   }
@@ -117,3 +118,18 @@ export const getVendorsApi = async (orgId) => {
     return [];
   }
 };
+
+export const getFiscalYearsApi = async (orgId) => {
+  const resolvedOrgId = orgId || getStoredOrgId();
+  try {
+    const res = await api.post(
+      '/generic/getFiscalYearList',
+      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
+    );
+    return res.data?.data || [];
+  } catch (err) {
+    console.error('Failed to load fiscal years from API:', err);
+    return [];
+  }
+};
+
