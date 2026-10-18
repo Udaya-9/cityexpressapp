@@ -64,7 +64,6 @@ const CreateUser = () => {
                 autoComplete="off"
                 initialValues={{
                     accessOnline: true,
-                    authentication: "local",
                 }}
             >
                 <Row gutter={24}>
@@ -155,29 +154,17 @@ const CreateUser = () => {
                 <Row gutter={24}>
                     <Col span={12}>
                         <Form.Item
-                            label="Authentication"
-                            name="authentication"
-                            rules={[{ required: true, message: "Please select authentication method" }]}
-                        >
-                            <Select placeholder="Select authentication method">
-                                <Option value="local">Local</Option>
-                                <Option value="ldap">LDAP</Option>
-                                <Option value="saml">SAML</Option>
-                                <Option value="oauth">OAuth 2.0</Option>
-                            </Select>
-                        </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                        <Form.Item
-                            label="Access Online"
+                            label="Account Status"
                             name="accessOnline"
                             valuePropName="checked"
                         >
-                            <Switch
-                                checkedChildren="Enabled"
-                                unCheckedChildren="Disabled"
-                                defaultChecked
-                            />
+                            <Space size="middle">
+                                <Switch
+                                    checkedChildren="Active"
+                                    unCheckedChildren="Inactive"
+                                />
+                                <Text type="secondary">Allow user to access the system online</Text>
+                            </Space>
                         </Form.Item>
                     </Col>
                 </Row>
