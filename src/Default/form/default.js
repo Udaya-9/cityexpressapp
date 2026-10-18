@@ -106,6 +106,7 @@ const buildSidebarMenu = ({ showVendor }) => [
         icon: <FileTextOutlined />,
         label: 'Memo',
         children: [
+          { key: 'memo-dashboard', label: 'Memo Dashboard' },
           { key: 'memo-create', label: 'Create New' },
           { key: 'memo-inbox', label: 'Inbox' },
           { key: 'memo-sent', label: 'Sent' },
@@ -184,6 +185,7 @@ const ROUTES = {
   'asset-add': '/asset',
   'asset-register': '/asset-management/register',
   'asset-deployment': '/asset-management/deployment',
+  'memo-dashboard': '/memo',
   'memo-create': '/memo/create',
   'memo-inbox': '/memo/inbox',
   'memo-sent': '/memo/sent',
@@ -255,6 +257,10 @@ const Dashboard = ({ children }) => {
         return;
       }
 
+      if (payload.organizationId) {
+        localStorage.setItem('organizationId', payload.organizationId);
+      }
+
       if (alive && payload.fullname) setFullName(payload.fullname);
 
       const sysUserId = payload.id;
@@ -276,6 +282,7 @@ const Dashboard = ({ children }) => {
 
         const d = json.data[0];
 
+        if (d.organizationId) localStorage.setItem('organizationId', d.organizationId);
         if (d.organizationname) setOrg(d.organizationname);
         if (d.FullName) setFullName(d.FullName);
         setShowVendor(Number(d.vendor_menu) === 1);
@@ -341,6 +348,7 @@ const Dashboard = ({ children }) => {
     if (key === '3') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('organizationId');
       navigate('/');
     }
   };

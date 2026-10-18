@@ -29,6 +29,9 @@ const LoginPage = () => {
         localStorage.setItem("token", data.token);
         const payload = JSON.parse(atob(data.token.split(".")[1]));
         localStorage.setItem("user", JSON.stringify(payload));
+        if (payload.organizationId) {
+          localStorage.setItem("organizationId", payload.organizationId);
+        }
 
         message.success(`Welcome back, ${payload.fullname || "User"}!`);
         navigate("/dashboard");

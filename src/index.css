@@ -11,3 +11,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Ensure Nepali Datepicker calendar popup displays cleanly on top of Modals & Drawers */
+.ndp-container {
+  z-index: 10000 !important;
+}

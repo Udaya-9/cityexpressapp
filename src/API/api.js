@@ -19,6 +19,28 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    const orgId = localStorage.getItem("organizationId") || (() => {
+        try {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            if (user?.organizationId || user?.OrganizationId) {
+                return user.organizationId || user.OrganizationId;
+            }
+        } catch {}
+        try {
+            if (token) {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const payload = JSON.parse(atob(base64));
+                return payload?.organizationId || payload?.OrganizationId || "";
+            }
+        } catch {}
+        return "";
+    })();
+    if (orgId && !config.headers["organization-id"]) {
+        config.headers["organization-id"] = orgId;
+    }
+
     return config;
 });
 
@@ -31,6 +53,7 @@ api.interceptors.response.use(
         if (status === 401 && !isLoginRequest) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
+            localStorage.removeItem("organizationId");
             window.location.href = "/";
         }
 
