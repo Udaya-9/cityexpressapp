@@ -1,0 +1,922 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Table,
+  Button,
+  Select,
+  InputNumber,
+  Row,
+  Col,
+  message,
+  Empty,
+  Typography,
+} from 'antd';
+import {
+  FileTextOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  ApartmentOutlined,
+  UnorderedListOutlined,
+  TagOutlined,
+  DownloadOutlined,
+  FolderOpenOutlined,
+  DollarCircleOutlined,
+} from '@ant-design/icons';
+import {
+  getFiscalYearsApi,
+  getDepartmentsApi,
+  getBudgetHeadingsApi,
+  getBudgetSubheadingsApi,
+  getBudgetRequestsApi,
+  submitBudgetRequestApi,
+} from '../API/budgetservice';
+
+const { Text } = Typography;
+const { Option } = Select;
+
+const C = {
+  darkNavy: '#002b49',
+  brand: '#01519b',
+  brandSoft: '#eaf2ff',
+  page: '#f4f7fc',
+  filterBg: '#ffffff',
+  border: '#e2e8f0',
+  filterBorder: '#d9e2ec',
+  text: '#16202f',
+  muted: '#667085',
+  subtext: '#526071',
+};
+
+const formatCurrency = (amount) => {
+  const num = Number(amount) || 0;
+  return `Rs. ${num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const BudgetManagement = () => {
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'create'
+
+  const [fiscalYears, setFiscalYears] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [headings, setHeadings] = useState([]);
+  const [subheadings, setSubheadings] = useState([]);
+
+  // Filter options for List view (Image 1)
+  const [reportTypeFilter, setReportTypeFilter] = useState(undefined);
+  const [departmentFilter, setDepartmentFilter] = useState(undefined);
+  const [fiscalYearFilter, setFiscalYearFilter] = useState(undefined);
+  const [headingFilter, setHeadingFilter] = useState(undefined);
+  const [subHeadingFilter, setSubHeadingFilter] = useState(undefined);
+
+  const [appliedFilters, setAppliedFilters] = useState({
+    reportType: undefined,
+    department: undefined,
+    fiscalYear: undefined,
+    heading: undefined,
+    subHeading: undefined,
+  });
+
+  const [budgetList, setBudgetList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // States for Create view (Image 2)
+  const [createFiscalYear, setCreateFiscalYear] = useState(undefined);
+  const [createDepartment, setCreateDepartment] = useState(undefined);
+  const [createHeadings, setCreateHeadings] = useState([]);
+  const [createSubheadings, setCreateSubheadings] = useState([]);
+  const [requestedAmounts, setRequestedAmounts] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const [fyList, deptList] = await Promise.all([
+          getFiscalYearsApi(),
+          getDepartmentsApi(),
+        ]);
+        if (!isMounted) return;
+        setFiscalYears(fyList || []);
+        setDepartments(deptList || []);
+
+        if (fyList?.length) {
+          const firstFy = fyList[0]?.Value || fyList[0]?.FiscalYear || fyList[0]?.Label || fyList[0];
+          setFiscalYearFilter(firstFy);
+          setCreateFiscalYear(firstFy);
+          setAppliedFilters((prev) => ({ ...prev, fiscalYear: firstFy }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const loadHeadingsAndSubs = useCallback(async (fy) => {
+    if (!fy) return;
+    try {
+      const [hList, sList] = await Promise.all([
+        getBudgetHeadingsApi(fy),
+        getBudgetSubheadingsApi(fy),
+      ]);
+      setHeadings(Array.isArray(hList) ? hList : []);
+      setSubheadings(Array.isArray(sList) ? sList : []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (fiscalYearFilter) {
+      loadHeadingsAndSubs(fiscalYearFilter);
+    }
+  }, [fiscalYearFilter, loadHeadingsAndSubs]);
+
+  const loadListData = useCallback(async (filters) => {
+    try {
+      setLoading(true);
+      const data = await getBudgetRequestsApi({
+        fiscalYear: filters.fiscalYear,
+        departmentId: filters.department,
+        reportType: filters.reportType,
+      });
+      let result = Array.isArray(data) ? data : [];
+      if (filters.heading) {
+        result = result.filter((r) => r.heading === filters.heading || r.headingCode === filters.heading);
+      }
+      if (filters.subHeading) {
+        result = result.filter((r) => r.subHeading === filters.subHeading || r.code === filters.subHeading);
+      }
+      setBudgetList(result);
+    } catch {
+      message.error('Failed to load budget data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'list' && appliedFilters.fiscalYear) {
+      loadListData(appliedFilters);
+    }
+  }, [viewMode, appliedFilters, loadListData]);
+
+  const handleApplyFilter = () => {
+    setAppliedFilters({
+      reportType: reportTypeFilter,
+      department: departmentFilter,
+      fiscalYear: fiscalYearFilter,
+      heading: headingFilter,
+      subHeading: subHeadingFilter,
+    });
+  };
+
+  const handleResetFilter = () => {
+    setReportTypeFilter(undefined);
+    setDepartmentFilter(undefined);
+    setHeadingFilter(undefined);
+    setSubHeadingFilter(undefined);
+    const defaultFy = fiscalYears[0]?.Value || fiscalYears[0]?.FiscalYear || fiscalYears[0]?.Label;
+    setFiscalYearFilter(defaultFy);
+    setAppliedFilters({
+      reportType: undefined,
+      department: undefined,
+      fiscalYear: defaultFy,
+      heading: undefined,
+      subHeading: undefined,
+    });
+  };
+
+  useEffect(() => {
+    if (viewMode === 'create' && createFiscalYear) {
+      (async () => {
+        try {
+          const [hList, sList] = await Promise.all([
+            getBudgetHeadingsApi(createFiscalYear),
+            getBudgetSubheadingsApi(createFiscalYear),
+          ]);
+          setCreateHeadings(Array.isArray(hList) ? hList : []);
+          setCreateSubheadings(Array.isArray(sList) ? sList : []);
+        } catch {
+          message.error('Failed to load budget categories');
+        }
+      })();
+    }
+  }, [viewMode, createFiscalYear]);
+
+  const groupedCreateHeadings = useMemo(() => {
+    return createHeadings.map((head) => {
+      const headCode = head.code || head.headingCode;
+      const headTitle = head.heading || head.title;
+      const items = createSubheadings.filter(
+        (s) => (headCode && s.headingCode === headCode) || (headTitle && s.headingTitle === headTitle)
+      );
+      return {
+        ...head,
+        code: headCode,
+        heading: headTitle,
+        subheadings: items,
+      };
+    });
+  }, [createHeadings, createSubheadings]);
+
+  const handleAmountChange = (subId, val) => {
+    setRequestedAmounts((prev) => ({
+      ...prev,
+      [subId]: val || 0,
+    }));
+  };
+
+  const subtotals = useMemo(() => {
+    const totals = {};
+    groupedCreateHeadings.forEach((head) => {
+      let subTotal = 0;
+      head.subheadings.forEach((sub) => {
+        const key = sub.id || sub.code;
+        subTotal += Number(requestedAmounts[key] || 0);
+      });
+      totals[head.code] = subTotal;
+    });
+    return totals;
+  }, [groupedCreateHeadings, requestedAmounts]);
+
+  const grandTotal = useMemo(() => {
+    return Object.values(subtotals).reduce((acc, curr) => acc + curr, 0);
+  }, [subtotals]);
+
+  const handleSubmitBudget = async () => {
+    if (grandTotal <= 0) {
+      message.warning('Please enter an amount greater than 0');
+      return;
+    }
+
+    if (!createDepartment) {
+      message.warning('Please select a department');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const items = [];
+      groupedCreateHeadings.forEach((head) => {
+        head.subheadings.forEach((sub) => {
+          const key = sub.id || sub.code;
+          const amt = requestedAmounts[key];
+          if (amt && amt > 0) {
+            items.push({
+              headingCode: head.code,
+              headingTitle: head.heading,
+              subHeadingCode: sub.code,
+              subHeadingTitle: sub.subHeadingTitle || sub.title,
+              code: sub.code,
+              amount: amt,
+              BudgetHeadId: head.BudgetHeadId || head.id || null,
+              BudgetSubHeadId: sub.BudgetSubHeadId || sub.id || null,
+            });
+          }
+        });
+      });
+
+      const selectedDepartment = departments.find((d) => (d.Value || d.DepartmentId || d.id) === createDepartment);
+
+      await submitBudgetRequestApi({
+        fiscalYear: createFiscalYear,
+        departmentId: createDepartment,
+        departmentName: selectedDepartment?.Label || selectedDepartment?.DepartmentName || null,
+        items,
+      });
+
+      message.success('Budget request submitted successfully!');
+      setViewMode('list');
+      loadListData(appliedFilters);
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to submit budget request';
+      message.error(errMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const rows = [
+      ['Fiscal Year', 'Heading Code', 'Heading Title', 'Subheading Code', 'Subheading Title', 'Requested Amount (NPR)'],
+    ];
+
+    groupedCreateHeadings.forEach((head) => {
+      head.subheadings.forEach((sub) => {
+        const key = sub.id || sub.code;
+        const amt = requestedAmounts[key] || 0;
+        rows.push([
+          `"${createFiscalYear}"`,
+          `"${head.code}"`,
+          `"${head.heading}"`,
+          `"${sub.code || ''}"`,
+          `"${sub.subHeadingTitle || sub.title || ''}"`,
+          `"${amt}"`,
+        ]);
+      });
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Budget_Request_${createFiscalYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const listColumns = [
+    {
+      title: 'CODE',
+      dataIndex: 'code',
+      key: 'code',
+      width: 100,
+      render: (val) => (
+        <span style={{ fontWeight: 700, color: C.brand, background: '#e8f0fe', padding: '2px 8px', borderRadius: 4 }}>
+          {val || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'HEADING',
+      dataIndex: 'heading',
+      key: 'heading',
+      render: (val) => <span style={{ fontWeight: 600, color: C.text }}>{val || '—'}</span>,
+    },
+    {
+      title: 'SUB HEADING',
+      dataIndex: 'subHeading',
+      key: 'subHeading',
+      render: (val, record) => <span>{val || record.subHeadingTitle || '—'}</span>,
+    },
+    {
+      title: 'DEPARTMENT',
+      dataIndex: 'department',
+      key: 'department',
+      render: (val) => <span style={{ color: C.subtext }}>{val || '—'}</span>,
+    },
+    {
+      title: 'FISCAL YEAR',
+      dataIndex: 'fiscalYear',
+      key: 'fiscalYear',
+      render: (val) => <span>{val || '—'}</span>,
+    },
+    {
+      title: 'REQUESTED AMOUNT',
+      dataIndex: 'requestedAmount',
+      key: 'requestedAmount',
+      align: 'right',
+      render: (val) => <span style={{ fontWeight: 700, color: C.darkNavy }}>{formatCurrency(val)}</span>,
+    },
+    {
+      title: 'STATUS',
+      dataIndex: 'status',
+      key: 'status',
+      align: 'center',
+      render: (val) => (
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: 11,
+            padding: '3px 8px',
+            borderRadius: 4,
+            textTransform: 'uppercase',
+            color: val === 'Approved' ? '#059669' : val === 'Rejected' ? '#dc2626' : '#d97706',
+            background: val === 'Approved' ? '#ecfdf5' : val === 'Rejected' ? '#fef2f2' : '#fffbeb',
+            border: `1px solid ${val === 'Approved' ? '#a7f3d0' : val === 'Rejected' ? '#fecaca' : '#fde68a'}`,
+          }}
+        >
+          {val || 'Pending'}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ padding: '4px 0' }}>
+      {viewMode === 'list' ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <FileTextOutlined style={{ fontSize: 24, color: C.brand }} />
+              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.darkNavy }}>
+                Budget Management
+              </h1>
+            </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setViewMode('create')}
+              style={{
+                background: '#01519b',
+                borderColor: '#01519b',
+                fontWeight: 600,
+                height: 38,
+                borderRadius: 6,
+                padding: '0 18px',
+              }}
+            >
+              + Create Budget
+            </Button>
+          </div>
+
+          <div
+            style={{
+              background: '#ffffff',
+              border: `1px solid ${C.filterBorder}`,
+              borderRadius: 8,
+              overflow: 'hidden',
+              marginBottom: 20,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            }}
+          >
+            <div
+              style={{
+                background: '#01519b',
+                color: '#ffffff',
+                padding: '10px 18px',
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <FilterOutlined />
+              <span>Filter Options</span>
+            </div>
+
+            <div style={{ padding: '18px 20px 16px' }}>
+              <Row gutter={[12, 12]}>
+                <Col xs={24} sm={12} md={5}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileTextOutlined style={{ color: C.brand }} />
+                    <span>Report Type</span>
+                  </div>
+                  <Select
+                    value={reportTypeFilter}
+                    onChange={setReportTypeFilter}
+                    placeholder="--Select Report Type--"
+                    allowClear
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    <Option value="Financial">Financial Budget</Option>
+                    <Option value="Non-Financial">Non-Financial Budget</Option>
+                    <Option value="Annual Budget">Annual Budget</Option>
+                    <Option value="onDemand Budget">onDemand Budget</Option>
+                  </Select>
+                </Col>
+
+                <Col xs={24} sm={12} md={5}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ApartmentOutlined style={{ color: C.brand }} />
+                    <span>Department</span>
+                  </div>
+                  <Select
+                    value={departmentFilter}
+                    onChange={setDepartmentFilter}
+                    placeholder="--Select Department--"
+                    allowClear
+                    showSearch
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    {departments.map((d) => {
+                      const val = d.Value || d.DepartmentId || d.id || d;
+                      const lbl = d.Label || d.DepartmentName || d.name || d;
+                      return (
+                        <Option key={val} value={val}>
+                          {lbl}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Col>
+
+                <Col xs={24} sm={12} md={4}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CalendarOutlined style={{ color: C.brand }} />
+                    <span>Fiscal Year</span>
+                  </div>
+                  <Select
+                    value={fiscalYearFilter}
+                    onChange={setFiscalYearFilter}
+                    placeholder="--Select Fiscal Year--"
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    {fiscalYears.map((fy) => {
+                      const val = fy.Value || fy.FiscalYear || fy.Label || fy;
+                      const lbl = fy.Label || fy.FiscalYear || fy.Value || fy;
+                      return (
+                        <Option key={val} value={val}>
+                          {lbl}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Col>
+
+                <Col xs={24} sm={12} md={5}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <UnorderedListOutlined style={{ color: C.brand }} />
+                    <span>Heading</span>
+                  </div>
+                  <Select
+                    value={headingFilter}
+                    onChange={setHeadingFilter}
+                    placeholder="--Select Headings--"
+                    allowClear
+                    showSearch
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    {headings.map((h) => {
+                      const val = h.code || h.heading;
+                      const lbl = `${h.code ? h.code + ' - ' : ''}${h.heading || h.title}`;
+                      return (
+                        <Option key={val} value={val}>
+                          {lbl}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Col>
+
+                <Col xs={24} sm={12} md={5}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <TagOutlined style={{ color: C.brand }} />
+                    <span>Sub Heading</span>
+                  </div>
+                  <Select
+                    value={subHeadingFilter}
+                    onChange={setSubHeadingFilter}
+                    placeholder="--Select SubHeading--"
+                    allowClear
+                    showSearch
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    {subheadings.map((s) => {
+                      const val = s.code || s.subHeadingTitle;
+                      const lbl = `${s.code ? s.code + ' - ' : ''}${s.subHeadingTitle || s.title}`;
+                      return (
+                        <Option key={val} value={val}>
+                          {lbl}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                </Col>
+              </Row>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                <Button
+                  onClick={handleResetFilter}
+                  style={{
+                    background: '#38bdf8',
+                    borderColor: '#38bdf8',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    height: 36,
+                    borderRadius: 6,
+                    padding: '0 20px',
+                  }}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={handleApplyFilter}
+                  style={{
+                    background: '#7c3aed',
+                    borderColor: '#7c3aed',
+                    fontWeight: 600,
+                    height: 36,
+                    borderRadius: 6,
+                    padding: '0 20px',
+                  }}
+                >
+                  Apply Filter
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: '#ffffff',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              overflow: 'hidden',
+            }}
+          >
+            {budgetList.length > 0 ? (
+              <Table
+                dataSource={budgetList}
+                columns={listColumns}
+                rowKey={(record) => record.id || record.code}
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+                size="middle"
+              />
+            ) : (
+              <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+                <Empty description="No budget records found. Click '+ Create Budget' to create one." />
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Button
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => setViewMode('list')}
+                  style={{ borderRadius: 6 }}
+                />
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 8,
+                    background: '#e8f0fe',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: C.brand,
+                    fontSize: 20,
+                  }}
+                >
+                  <FileTextOutlined />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, color: C.darkNavy, fontWeight: 700, fontSize: 20 }}>
+                    Budget Request Management
+                  </h2>
+                  <Text style={{ color: C.muted, fontSize: 13 }}>
+                    Create and manage department budget requests
+                  </Text>
+                </div>
+              </div>
+
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExportCSV}
+                style={{
+                  fontWeight: 600,
+                  height: 38,
+                  borderRadius: 6,
+                  borderColor: C.border,
+                }}
+              >
+                Export to CSV
+              </Button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: '#01519b',
+              borderRadius: 8,
+              padding: '12px 18px',
+              color: '#ffffff',
+              marginBottom: 20,
+              display: 'flex',
+              gap: 24,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
+                SELECT FISCAL YEAR
+              </div>
+              <Select
+                value={createFiscalYear}
+                onChange={setCreateFiscalYear}
+                style={{ width: 260, height: 38 }}
+              >
+                {fiscalYears.map((fy) => {
+                  const val = fy.Value || fy.FiscalYear || fy.Label || fy;
+                  const lbl = fy.Label || fy.FiscalYear || fy.Value || fy;
+                  return (
+                    <Option key={val} value={val}>
+                      {lbl}
+                    </Option>
+                  );
+                })}
+              </Select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
+                SELECT DEPARTMENT
+              </div>
+              <Select
+                value={createDepartment}
+                onChange={setCreateDepartment}
+                placeholder="--Select Department--"
+                showSearch
+                style={{ width: 260, height: 38 }}
+              >
+                {departments.map((d) => {
+                  const val = d.Value || d.DepartmentId || d.id || d;
+                  const lbl = d.Label || d.DepartmentName || d.name || d;
+                  return (
+                    <Option key={val} value={val}>
+                      {lbl}
+                    </Option>
+                  );
+                })}
+              </Select>
+            </div>
+          </div>
+
+          {groupedCreateHeadings.length === 0 ? (
+            <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: 40, textAlign: 'center' }}>
+              <Empty description="No budget headings available for this Fiscal Year." />
+            </div>
+          ) : (
+            <div>
+              {groupedCreateHeadings.map((head) => {
+                const headSubtotal = subtotals[head.code] || 0;
+
+                return (
+                  <div
+                    key={head.code}
+                    style={{
+                      marginBottom: 20,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      background: '#ffffff',
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: '#01519b',
+                        padding: '10px 18px',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                        <FolderOpenOutlined />
+                        <span>{head.heading}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {head.code}
+                      </div>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${C.border}` }}>
+                          <th style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#475569', width: 120 }}>
+                            CODE
+                          </th>
+                          <th style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#475569' }}>
+                            SUB HEADING
+                          </th>
+                          <th style={{ padding: '10px 18px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: '#475569', width: 260 }}>
+                            REQUESTED AMOUNT
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {head.subheadings.map((sub) => {
+                          const key = sub.id || sub.code;
+                          return (
+                            <tr key={key} style={{ borderBottom: `1px solid #f1f5f9` }}>
+                              <td style={{ padding: '12px 18px' }}>
+                                <span style={{ fontWeight: 700, color: C.brand, background: '#e8f0fe', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
+                                  {sub.code || '—'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 18px', fontWeight: 600, color: C.text, fontSize: 13 }}>
+                                {sub.subHeadingTitle || sub.title}
+                              </td>
+                              <td style={{ padding: '12px 18px', textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid #cbd5e1`, borderRadius: 4, overflow: 'hidden' }}>
+                                  <span style={{ background: '#01519b', color: '#ffffff', padding: '6px 10px', fontSize: 12, fontWeight: 600 }}>
+                                    Rs.
+                                  </span>
+                                  <InputNumber
+                                    min={0}
+                                    bordered={false}
+                                    value={requestedAmounts[key] || 0}
+                                    onChange={(val) => handleAmountChange(key, val)}
+                                    formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                    parser={(val) => (val ? val.replace(/\$\s?|(,*)/g, '') : '')}
+                                    style={{ width: 140, textAlign: 'right' }}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    <div
+                      style={{
+                        padding: '10px 18px',
+                        background: '#f8fafc',
+                        borderTop: `1px solid ${C.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Subtotal</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.darkNavy }}>
+                        {formatCurrency(headSubtotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div
+                style={{
+                  background: '#01519b',
+                  borderRadius: 8,
+                  padding: '16px 20px',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 24,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 6,
+                      background: 'rgba(255,255,255,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 18,
+                    }}
+                  >
+                    <DollarCircleOutlined />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>Total Budget Request</div>
+                    <div style={{ fontSize: 11, opacity: 0.8 }}>Sum of all sub-headings</div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 22, fontWeight: 800 }}>
+                  {formatCurrency(grandTotal)}
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={submitting}
+                  onClick={handleSubmitBudget}
+                  style={{
+                    background: '#01519b',
+                    borderColor: '#01519b',
+                    fontWeight: 700,
+                    height: 42,
+                    borderRadius: 6,
+                    padding: '0 36px',
+                  }}
+                >
+                  Submit Budget Request
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default BudgetManagement;

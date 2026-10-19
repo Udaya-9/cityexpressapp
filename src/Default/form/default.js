@@ -63,7 +63,7 @@ const decodeJwt = (token) => {
 };
 
 /* ---------- menu structure builder ---------- */
-const buildSidebarMenu = ({ showVendor }) => [
+const buildSidebarMenu = ({ showVendor, dynamicReports = [] }) => [
   {
     type: 'group',
     label: 'Overview',
@@ -146,18 +146,13 @@ const buildSidebarMenu = ({ showVendor }) => [
         icon: <BarChartOutlined />,
         label: 'Report',
         children: [
-          { key: 'daily-stock', label: 'Daily Stock' },
-          { key: 'outward-item', label: 'Outward Item' },
-          { key: 'outward-department', label: 'Outward Department' },
-          { key: 'purchase-vendor', label: 'Purchase Vendor' },
-          { key: 'purchase-product', label: 'Purchase Product' },
-          { key: 'stock-value', label: 'Stock Report with Value' },
-          { key: 'stock-ledger', label: 'Stock Ledger' },
-          { key: 'execute-depreciation', label: 'Execute Report' },
-          { key: 'depreciation-report', label: 'Depreciation Report' },
-          { key: 'redispatch-report', label: 'Re-Dispatch Report' },
-          { key: 'transaction-report-main', label: 'Transaction Report' },
-          { key: 'stakeholder-report', label: 'Stake Holder Report' },
+          { key: 'report-wizard', label: 'Report Wizard' },
+          ...(dynamicReports && dynamicReports.length > 0
+            ? dynamicReports.map((r) => ({
+                key: `report-item-${r.ReportConfigId}`,
+                label: r.ReportName,
+              }))
+            : []),
         ],
       },
     ],
@@ -196,6 +191,7 @@ const ROUTES = {
   'budget-approve': '/budget/approve',
   'budget-amendment': '/budget/amendment',
   'budget-transaction': '/budget/transaction',
+  'report-wizard': '/report',
   'daily-stock': '/report/daily-stock',
   'outward-item': '/report/outward-item',
   'outward-department': '/report/outward-department',
@@ -229,7 +225,7 @@ const userMenuItems = [
 
 const Dashboard = ({ children }) => {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [openKeys, setOpenKeys] = useState([]);
@@ -238,6 +234,7 @@ const Dashboard = ({ children }) => {
   const [fullName, setFullName] = useState(FALLBACK_USER);
   const [showVendor, setShowVendor] = useState(false);
   const [fiscalYear, setFiscalYear] = useState(FALLBACK_FY);
+  const [dynamicReports, setDynamicReports] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -262,6 +259,16 @@ const Dashboard = ({ children }) => {
       }
 
       if (alive && payload.fullname) setFullName(payload.fullname);
+
+      // Fetch dynamic reports from ReportConfig
+      try {
+        const { data: repRes } = await api.post('/report/list', {});
+        if (alive && repRes?.success && Array.isArray(repRes.data)) {
+          setDynamicReports(repRes.data);
+        }
+      } catch (e) {
+        // quiet fallback
+      }
 
       const sysUserId = payload.id;
       if (!sysUserId) return;
@@ -301,7 +308,10 @@ const Dashboard = ({ children }) => {
     };
   }, [navigate]);
 
-  const sidebarMenuItems = useMemo(() => buildSidebarMenu({ showVendor }), [showVendor]);
+  const sidebarMenuItems = useMemo(
+    () => buildSidebarMenu({ showVendor, dynamicReports }),
+    [showVendor, dynamicReports]
+  );
 
   const { PARENT_OF, LABEL_OF } = useMemo(() => {
     const parentOf = {};
@@ -321,6 +331,13 @@ const Dashboard = ({ children }) => {
   const isExpanded = !collapsed || isHovered;
 
   const selectedKey = useMemo(() => {
+    if (pathname.startsWith('/report')) {
+      const searchParams = new URLSearchParams(search);
+      const queryId = searchParams.get('id');
+      if (queryId) return `report-item-${queryId}`;
+      return 'report-wizard';
+    }
+
     let best = 'dashboard';
     let bestLen = -1;
     Object.entries(ROUTES).forEach(([key, path]) => {
@@ -331,7 +348,7 @@ const Dashboard = ({ children }) => {
       }
     });
     return best;
-  }, [pathname]);
+  }, [pathname, search]);
 
   useEffect(() => {
     const parent = PARENT_OF[selectedKey];
@@ -339,6 +356,11 @@ const Dashboard = ({ children }) => {
   }, [selectedKey, PARENT_OF]);
 
   const handleSidebarClick = ({ key }) => {
+    if (key.startsWith('report-item-')) {
+      const configId = key.replace('report-item-', '');
+      navigate(`/report?id=${configId}`);
+      return;
+    }
     if (ROUTES[key]) navigate(ROUTES[key]);
   };
 
