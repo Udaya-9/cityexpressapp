@@ -71,65 +71,83 @@ export const updateHandoverStatusApi = async ({ key, referenceId, handoverStatus
   return res.data?.data;
 };
 
-export const getDepartmentsApi = async (orgId) => {
-  const resolvedOrgId = orgId || getStoredOrgId();
+export const getDepartmentsApi = async () => {
   try {
-    const res = await api.post(
-      '/department/getDepartmentList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
-    );
-    return res.data?.data || [];
+    const res = await api.post('/list/getGenericList', { FilterType: 'Department' });
+    const list = res.data?.data || [];
+    if (Array.isArray(list) && list.length > 0) {
+      return list.map((d) => ({
+        Value: d.Value,
+        Label: (d.Label || '').trim(),
+        DepartmentId: d.Value,
+        DepartmentName: (d.Label || '').trim(),
+      }));
+    }
   } catch (err) {
     console.error('Failed to load departments from API:', err);
-    return [];
   }
+  return [];
 };
 
 export const getUsersApi = async (orgId, departmentId) => {
-  const resolvedOrgId = orgId || getStoredOrgId();
   try {
-    const payload = {};
-    if (resolvedOrgId) payload.OrganizationId = resolvedOrgId;
-    if (departmentId) {
-      payload.Department = departmentId;
-      payload.DepartmentId = departmentId;
+    const res = await api.post('/list/getGenericList', {
+      FilterType: 'User',
+      DepartmentId: departmentId || undefined,
+    });
+    const list = res.data?.data || [];
+    if (Array.isArray(list) && list.length > 0) {
+      return list.map((u) => ({
+        Value: u.Value,
+        Label: (u.Label || '').trim(),
+        Id: u.Value,
+        FullName: (u.Label || '').trim(),
+        DepartmentId: u.DepartmentId || null,
+        departmentId: u.DepartmentId || null,
+      }));
     }
-    const res = await api.post(
-      '/users/getUserList',
-      payload
-    );
-    return res.data?.data || [];
   } catch (err) {
     console.error('Failed to load users from API:', err);
-    return [];
   }
+  return [];
 };
 
-export const getVendorsApi = async (orgId) => {
-  const resolvedOrgId = orgId || getStoredOrgId();
+export const getVendorsApi = async () => {
   try {
-    const res = await api.post(
-      '/generic/getVendorList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
-    );
-    return res.data?.data || [];
+    const res = await api.post('/list/getGenericList', { FilterType: 'Vendor' });
+    const list = res.data?.data || [];
+    if (Array.isArray(list) && list.length > 0) {
+      return list.map((v) => ({
+        Value: v.Value,
+        Label: (v.Label || '').trim(),
+        VendorId: v.Value,
+        VendorName: (v.Label || '').trim(),
+      }));
+    }
   } catch (err) {
     console.error('Failed to load vendors from API:', err);
-    return [];
   }
+  return [];
 };
 
-export const getFiscalYearsApi = async (orgId) => {
-  const resolvedOrgId = orgId || getStoredOrgId();
+export const getFiscalYearsApi = async () => {
   try {
-    const res = await api.post(
-      '/generic/getFiscalYearList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
-    );
-    return res.data?.data || [];
+    const res = await api.post('/list/getGenericList', { FilterType: 'FiscalYear' });
+    const list = res.data?.data || [];
+    if (Array.isArray(list) && list.length > 0) {
+      return list.map((f) => {
+        const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
+        return {
+          Value: yearName,
+          Label: yearName,
+          FiscalYear: yearName,
+          FiscalId: f.Value,
+        };
+      });
+    }
   } catch (err) {
     console.error('Failed to load fiscal years from API:', err);
-    return [];
   }
+  return [];
 };
 

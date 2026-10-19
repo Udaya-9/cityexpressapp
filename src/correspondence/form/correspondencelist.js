@@ -66,6 +66,22 @@ const formatNepaliDate = (dateInput) => {
   return null;
 };
 
+const toAdDateString = (input) => {
+  if (!input) return '';
+  const str = String(input).trim();
+  if (/^20[789]\d/.test(str)) {
+    return bsToAdString(str);
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return str.slice(0, 10);
+};
+
 const C = {
   darkNavy: '#002b49',
   brand: '#01519b',
@@ -93,13 +109,15 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
   const [fiscalYear, setFiscalYear] = useState(undefined);
   const [department, setDepartment] = useState(undefined);
   const [user, setUser] = useState(undefined);
-  const [dateFilter, setDateFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   const [appliedFilters, setAppliedFilters] = useState({
     fiscalYear: undefined,
     department: undefined,
     user: undefined,
-    dateFilter: '',
+    fromDate: '',
+    toDate: '',
   });
 
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -198,7 +216,8 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       fiscalYear,
       department,
       user,
-      dateFilter: typeof dateFilter === 'string' ? dateFilter.trim() : '',
+      fromDate: typeof fromDate === 'string' ? fromDate.trim() : '',
+      toDate: typeof toDate === 'string' ? toDate.trim() : '',
     });
   };
 
@@ -206,32 +225,31 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
     setFiscalYear(undefined);
     setDepartment(undefined);
     setUser(undefined);
-    setDateFilter('');
+    setFromDate('');
+    setToDate('');
     setAppliedFilters({
       fiscalYear: undefined,
       department: undefined,
       user: undefined,
-      dateFilter: '',
+      fromDate: '',
+      toDate: '',
     });
   };
 
   const filteredData = useMemo(() => {
-    if (!appliedFilters.dateFilter) return records;
-    const q = appliedFilters.dateFilter.trim().toLowerCase();
+    const fromAd = toAdDateString(appliedFilters.fromDate);
+    const toAd = toAdDateString(appliedFilters.toDate);
+
+    if (!fromAd && !toAd) return records;
+
     return records.filter((item) => {
-      const bs = formatNepaliDate(item.receivedDate);
-      const bsDateStr = bs ? bs.bsDate.toLowerCase() : '';
-      const bsFormattedStr = bs ? bs.bsFormatted.toLowerCase() : '';
-      const rawDate = (item.receivedDate || '').toLowerCase();
-      const adStr = (bs?.bsDate ? bsToAdString(bs.bsDate) : '').toLowerCase();
-      return (
-        bsDateStr.includes(q) ||
-        bsFormattedStr.includes(q) ||
-        rawDate.includes(q) ||
-        adStr.includes(q)
-      );
+      const recDate = toAdDateString(item.receivedDate || item.createdDate);
+      if (!recDate) return false;
+      if (fromAd && recDate < fromAd) return false;
+      if (toAd && recDate > toAd) return false;
+      return true;
     });
-  }, [records, appliedFilters.dateFilter]);
+  }, [records, appliedFilters.fromDate, appliedFilters.toDate]);
 
   const openAcknowledgeModal = (record) => {
     if (record.handoverStatus === 'ACKNOWLEDGED') return;
@@ -612,7 +630,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
           }}
         >
           <Row gutter={[16, 12]} align="bottom">
-            <Col xs={24} sm={12} md={6} lg={5}>
+            <Col xs={24} sm={12} md={6} lg={4}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <CalendarOutlined style={{ marginRight: 6 }} />
                 FISCAL YEAR
@@ -633,7 +651,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={12} md={6} lg={isIncoming ? 6 : 7}>
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 5}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <ApartmentOutlined style={{ marginRight: 6 }} />
                 DEPARTMENT
@@ -655,7 +673,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             </Col>
 
             {isIncoming && (
-              <Col xs={24} sm={12} md={6} lg={5}>
+              <Col xs={24} sm={12} md={6} lg={4}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                   <UserOutlined style={{ marginRight: 6 }} />
                   USER
@@ -677,21 +695,35 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
               </Col>
             )}
 
-            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 6}>
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 5}>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
                 <CalendarOutlined style={{ marginRight: 6 }} />
-                DATE
+                FROM DATE
               </div>
               <NepaliDatePicker
-                value={dateFilter}
-                onChange={setDateFilter}
-                placeholder="mm/dd/yyyy"
+                value={fromDate}
+                onChange={setFromDate}
+                placeholder="From Date"
                 allowClear
                 style={{ width: '100%', height: 36 }}
               />
             </Col>
 
-            <Col xs={24} sm={12} md={6} lg={4}>
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 5}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b556e', marginBottom: 6, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                <CalendarOutlined style={{ marginRight: 6 }} />
+                TO DATE
+              </div>
+              <NepaliDatePicker
+                value={toDate}
+                onChange={setToDate}
+                placeholder="To Date"
+                allowClear
+                style={{ width: '100%', height: 36 }}
+              />
+            </Col>
+
+            <Col xs={24} sm={12} md={6} lg={isIncoming ? 4 : 5}>
               <Space style={{ width: '100%', justifyContent: 'flex-start' }}>
                 <Button
                   type="primary"
