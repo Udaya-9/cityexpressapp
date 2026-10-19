@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Card,
   Row,
@@ -18,7 +18,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  BarChartOutlined,
   ThunderboltOutlined,
   ReloadOutlined,
   FilterOutlined,
@@ -31,7 +30,7 @@ import {
   executeReportApi,
 } from '../API/reportservice';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 const C = {
@@ -44,7 +43,6 @@ const C = {
 };
 
 const ReportWizard = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const queryReportId = useMemo(() => {
     return new URLSearchParams(location.search).get('id');
@@ -56,7 +54,6 @@ const ReportWizard = () => {
   const [dropdownOptions, setDropdownOptions] = useState({});
   const [formValues, setFormValues] = useState({});
   
-  const [loadingReports, setLoadingReports] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
   const [executing, setExecuting] = useState(false);
 
@@ -73,7 +70,6 @@ const ReportWizard = () => {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      setLoadingReports(true);
       try {
         const list = await getReportListApi();
         if (isMounted) {
@@ -88,8 +84,6 @@ const ReportWizard = () => {
       } catch (err) {
         console.error('Failed to load reports:', err);
         message.error('Failed to load reports configuration');
-      } finally {
-        if (isMounted) setLoadingReports(false);
       }
     })();
     return () => {
@@ -103,11 +97,6 @@ const ReportWizard = () => {
       setSelectedReportId(queryReportId);
     }
   }, [queryReportId, reports, selectedReportId]);
-
-  const handleReportChange = (reportId) => {
-    setSelectedReportId(reportId);
-    navigate(`/report?id=${reportId}`, { replace: true });
-  };
 
   // 2. Fetch filters when selected report changes
   useEffect(() => {
@@ -328,50 +317,7 @@ const ReportWizard = () => {
   }, [columnKeys]);
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '24px 32px' }}>
-      {/* Header Eyebrow & Title */}
-      <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#1a73e8',
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-            marginBottom: 4,
-          }}
-        >
-          ON-DEMAND ANALYTICS & REPORTS
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <BarChartOutlined style={{ fontSize: 26, color: C.brand }} />
-            <Title level={2} style={{ margin: 0, color: C.brandDark, fontWeight: 700 }}>
-              Report Wizard
-            </Title>
-          </div>
-
-          {/* Report Selector Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.subtext }}>Select Report:</span>
-            <Select
-              value={selectedReportId}
-              onChange={handleReportChange}
-              loading={loadingReports}
-              style={{ width: 280, height: 38 }}
-              placeholder="-- Select a Report --"
-            >
-              {reports.map((r) => (
-                <Option key={r.ReportConfigId} value={r.ReportConfigId}>
-                  {r.ReportName}
-                </Option>
-              ))}
-            </Select>
-          </div>
-        </div>
-      </div>
-
+    <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '16px 24px' }}>
       {/* Dynamic Filter Section */}
       <Card
         size="small"

@@ -255,7 +255,6 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
     try {
       const count = parseInt(values.count, 10) || 1;
       const remarks = (values.remarks || '').trim();
-      const departmentId = values.departmentId || departments[0]?.value;
 
       const loggedUser = (() => {
         try {
@@ -268,15 +267,15 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
       const createdList = await batchCreateOutgoingApi({
         count,
         remarks,
-        departmentId,
-        createdBy: values.createdBy || loggedUser.id || loggedUser.Id || null,
+        departmentId: loggedUser.departmentId || loggedUser.DepartmentId || null,
+        createdBy: loggedUser.id || loggedUser.Id || null,
       });
 
       if (createdList && createdList.length > 0) {
         message.success(`Successfully generated ${createdList.length} outgoing correspondence ID(s)!`);
         setGeneratedList((prev) => [...createdList, ...prev]);
         outgoingForm.resetFields();
-        outgoingForm.setFieldsValue({ count: 1, departmentId: departments[0]?.value });
+        outgoingForm.setFieldsValue({ count: 1 });
       } else {
         message.warning('Could not generate outgoing ID. Please check database connection.');
       }
@@ -476,45 +475,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12} md={5}>
-                  <Form.Item
-                    name="departmentId"
-                    label={<span style={labelStyle}>DEPARTMENT</span>}
-                  >
-                    <Select
-                      placeholder="Select Department"
-                      style={{ height: 42, width: '100%' }}
-                    >
-                      {departments.map((d) => (
-                        <Option key={d.value} value={d.value}>
-                          {d.label}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={5}>
-                  <Form.Item
-                    name="createdBy"
-                    label={<span style={labelStyle}>CREATED BY</span>}
-                  >
-                    <Select
-                      placeholder="Select User"
-                      style={{ height: 42, width: '100%' }}
-                      allowClear
-                      showSearch
-                    >
-                      {users.map((u) => (
-                        <Option key={u.value} value={u.value}>
-                          {u.label}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={7}>
+                <Col xs={24} sm={12} md={16}>
                   <Form.Item
                     name="remarks"
                     label={<span style={labelStyle}>REMARKS</span>}
@@ -527,7 +488,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={24} md={3} style={{ display: 'flex', alignItems: 'center' }}>
+                <Col xs={24} sm={24} md={4} style={{ display: 'flex', alignItems: 'center' }}>
                   <Form.Item style={{ width: '100%', marginBottom: 0 }}>
                     <Button
                       type="primary"

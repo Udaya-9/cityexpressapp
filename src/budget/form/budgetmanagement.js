@@ -84,7 +84,7 @@ const BudgetManagement = () => {
 
   // States for Create view (Image 2)
   const [createFiscalYear, setCreateFiscalYear] = useState(undefined);
-  const [createDepartment, setCreateDepartment] = useState(undefined);
+  const [createHeadingFilter, setCreateHeadingFilter] = useState('ALL');
   const [createHeadings, setCreateHeadings] = useState([]);
   const [createSubheadings, setCreateSubheadings] = useState([]);
   const [requestedAmounts, setRequestedAmounts] = useState({});
@@ -211,10 +211,14 @@ const BudgetManagement = () => {
 
   const groupedCreateHeadings = useMemo(() => {
     return createHeadings.map((head) => {
-      const headCode = head.code || head.headingCode;
-      const headTitle = head.heading || head.title;
+      const headCode = (head.code || head.headingCode || '').trim();
+      const headTitle = (head.heading || head.title || '').trim();
+      const headId = head.BudgetHeadId || head.id;
       const items = createSubheadings.filter(
-        (s) => (headCode && s.headingCode === headCode) || (headTitle && s.headingTitle === headTitle)
+        (s) =>
+          (headId && s.BudgetHeadId && s.BudgetHeadId === headId) ||
+          (headCode && (s.headingCode || '').trim() === headCode) ||
+          (headTitle && (s.headingTitle || '').trim().toLowerCase() === headTitle.toLowerCase())
       );
       return {
         ...head,
@@ -224,6 +228,15 @@ const BudgetManagement = () => {
       };
     });
   }, [createHeadings, createSubheadings]);
+
+  const displayedCreateHeadings = useMemo(() => {
+    if (!createHeadingFilter || createHeadingFilter === 'ALL') {
+      return groupedCreateHeadings;
+    }
+    return groupedCreateHeadings.filter(
+      (h) => h.code === createHeadingFilter || (h.headingCode || '').trim() === createHeadingFilter
+    );
+  }, [groupedCreateHeadings, createHeadingFilter]);
 
   const handleAmountChange = (subId, val) => {
     setRequestedAmounts((prev) => ({
@@ -255,11 +268,6 @@ const BudgetManagement = () => {
       return;
     }
 
-    if (!createDepartment) {
-      message.warning('Please select a department');
-      return;
-    }
-
     try {
       setSubmitting(true);
       const items = [];
@@ -282,12 +290,18 @@ const BudgetManagement = () => {
         });
       });
 
-      const selectedDepartment = departments.find((d) => (d.Value || d.DepartmentId || d.id) === createDepartment);
+      const loggedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      const deptId = loggedUser.departmentId || loggedUser.DepartmentId || null;
 
       await submitBudgetRequestApi({
         fiscalYear: createFiscalYear,
-        departmentId: createDepartment,
-        departmentName: selectedDepartment?.Label || selectedDepartment?.DepartmentName || null,
+        departmentId: deptId,
         items,
       });
 
@@ -690,6 +704,7 @@ const BudgetManagement = () => {
               display: 'flex',
               gap: 24,
               flexWrap: 'wrap',
+              alignItems: 'center',
             }}
           >
             <div>
@@ -698,7 +713,10 @@ const BudgetManagement = () => {
               </div>
               <Select
                 value={createFiscalYear}
-                onChange={setCreateFiscalYear}
+                onChange={(val) => {
+                  setCreateFiscalYear(val);
+                  setCreateHeadingFilter('ALL');
+                }}
                 style={{ width: 260, height: 38 }}
               >
                 {fiscalYears.map((fy) => {
@@ -712,20 +730,21 @@ const BudgetManagement = () => {
                 })}
               </Select>
             </div>
+
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
-                SELECT DEPARTMENT
+                SELECT HEADING
               </div>
               <Select
-                value={createDepartment}
-                onChange={setCreateDepartment}
-                placeholder="--Select Department--"
-                showSearch
+                value={createHeadingFilter}
+                onChange={setCreateHeadingFilter}
+                placeholder="--Select Heading--"
                 style={{ width: 260, height: 38 }}
               >
-                {departments.map((d) => {
-                  const val = d.Value || d.DepartmentId || d.id || d;
-                  const lbl = d.Label || d.DepartmentName || d.name || d;
+                <Option value="ALL">-- All Headings --</Option>
+                {createHeadings.map((h) => {
+                  const val = (h.code || h.headingCode || '').trim();
+                  const lbl = `${val ? val + ' - ' : ''}${h.heading || h.title}`;
                   return (
                     <Option key={val} value={val}>
                       {lbl}
@@ -736,13 +755,13 @@ const BudgetManagement = () => {
             </div>
           </div>
 
-          {groupedCreateHeadings.length === 0 ? (
+          {displayedCreateHeadings.length === 0 ? (
             <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: 40, textAlign: 'center' }}>
               <Empty description="No budget headings available for this Fiscal Year." />
             </div>
           ) : (
             <div>
-              {groupedCreateHeadings.map((head) => {
+              {displayedCreateHeadings.map((head) => {
                 const headSubtotal = subtotals[head.code] || 0;
 
                 return (

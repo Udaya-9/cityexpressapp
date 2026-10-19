@@ -142,6 +142,8 @@ const BudgetHeading = () => {
     loadData();
   }, [loadData]);
 
+
+
   // Save Heading
   const handleSaveHeading = async () => {
     const fy = headingFY || selectedFiscalYear;
@@ -242,6 +244,7 @@ const BudgetHeading = () => {
     const headCode = selectedHead ? selectedHead.code : subMainHeading;
     const headTitle = selectedHead ? (selectedHead.heading || selectedHead.title) : subMainHeading;
     const headId = selectedHead ? (selectedHead.BudgetHeadId || selectedHead.id) : null;
+    const resolvedBudgetType = selectedHead?.budgetType || subType || 'Financial';
 
     try {
       if (editingSubId) {
@@ -251,7 +254,7 @@ const BudgetHeading = () => {
           headingTitle: headTitle,
           BudgetHeadId: headId,
           subHeadingTitle: subTitle.trim(),
-          budgetType: subType,
+          budgetType: resolvedBudgetType,
           requestType: subRequestType,
         });
         message.success('Subheading updated successfully');
@@ -262,7 +265,7 @@ const BudgetHeading = () => {
           headingTitle: headTitle,
           BudgetHeadId: headId,
           subHeadingTitle: subTitle.trim(),
-          budgetType: subType,
+          budgetType: resolvedBudgetType,
           requestType: subRequestType,
         });
         message.success('Subheading created successfully');
@@ -569,29 +572,8 @@ const BudgetHeading = () => {
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              background: '#e8f0fe',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: C.brand,
-              fontSize: 20,
-            }}
-          >
-            <AppstoreOutlined />
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.darkNavy }}>
-              Budget Headings
-            </h2>
-            <Text style={{ color: C.muted, fontSize: 13 }}>
-              Configure financial and non-financial budget classifications and hierarchy
-            </Text>
-          </div>
+          
+       
         </div>
 
         <Space size="middle">
@@ -910,7 +892,7 @@ const BudgetHeading = () => {
                           </Select>
                         </Col>
 
-                        <Col xs={24} sm={12} md={5}>
+                        <Col xs={24} sm={12} md={6}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 4 }}>
                             Main Heading
                           </div>
@@ -937,21 +919,7 @@ const BudgetHeading = () => {
                           </div>
                         </Col>
 
-                        <Col xs={24} sm={12} md={4}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 4 }}>
-                            Budget Type
-                          </div>
-                          <Select
-                            value={subType}
-                            onChange={setSubType}
-                            style={{ width: '100%', height: 36 }}
-                          >
-                            <Option value="Financial">Financial</Option>
-                            <Option value="Non-Financial">Non-Financial</Option>
-                          </Select>
-                        </Col>
-
-                        <Col xs={24} sm={12} md={4}>
+                        <Col xs={24} sm={12} md={5}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 4 }}>
                             Request Type
                           </div>
@@ -965,7 +933,7 @@ const BudgetHeading = () => {
                           </Select>
                         </Col>
 
-                        <Col xs={24} sm={12} md={4}>
+                        <Col xs={24} sm={12} md={6}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 4 }}>
                             Subheading Title
                           </div>

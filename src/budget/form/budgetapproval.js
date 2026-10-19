@@ -23,7 +23,7 @@ import {
   getFiscalYearsApi,
   getDepartmentsApi,
   getBudgetRequestsApi,
-  updateBudgetApprovalStatusApi,
+  bulkUpdateBudgetApprovalStatusApi,
 } from '../API/budgetservice';
 
 const { Text } = Typography;
@@ -194,10 +194,10 @@ const BudgetApproval = () => {
           status === 'Rejected'
             ? 0
             : Number(approvedAmounts[key] !== undefined ? approvedAmounts[key] : (item.requestedAmount || 0));
-        return updateBudgetApprovalStatusApi({ id: item.id, status, approvedAmount });
+        return { id: item.id, status, approvedAmount };
       });
 
-      await Promise.all(updates);
+      await bulkUpdateBudgetApprovalStatusApi(updates);
       message.success('Budget approvals updated successfully!');
       loadRequests();
     } catch (err) {

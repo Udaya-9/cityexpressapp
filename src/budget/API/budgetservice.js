@@ -1,26 +1,5 @@
 import api from '../../API/api';
 
-const getStoredOrgId = () => {
-  const direct = localStorage.getItem('organizationId');
-  if (direct) return direct;
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user?.organizationId || user?.OrganizationId) {
-      return user.organizationId || user.OrganizationId;
-    }
-  } catch {}
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(base64));
-      return payload?.organizationId || payload?.OrganizationId || null;
-    }
-  } catch {}
-  return null;
-};
-
 export const getStoredUserId = () => {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -37,34 +16,13 @@ export const getStoredUserId = () => {
       return payload?.id || payload?.Id || payload?.userId || null;
     }
   } catch {}
-  return '22832DF7-B958-48AB-8AD0-838E888636BD';
+  return null;
 };
 
-export const getFiscalYearsApi = async (orgId) => {
+export const getFiscalYearsApi = async () => {
   try {
     const res = await api.post('/list/getGenericList', { FilterType: 'FiscalYear' });
-    const list = res.data?.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.map((f) => {
-        const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
-        return {
-          Value: yearName,
-          Label: yearName,
-          FiscalYear: yearName,
-          FiscalId: f.Value,
-        };
-      });
-    }
-  } catch {}
-
-  const resolvedOrgId = orgId || getStoredOrgId();
-  try {
-    const res = await api.post(
-      '/generic/getFiscalYearList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
-    );
-    const data = res.data?.data || [];
-    return data.map((f) => {
+    return (res.data?.data || []).map((f) => {
       const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
       return {
         Value: yearName,
@@ -78,27 +36,15 @@ export const getFiscalYearsApi = async (orgId) => {
   }
 };
 
-export const getDepartmentsApi = async (orgId) => {
+export const getDepartmentsApi = async () => {
   try {
     const res = await api.post('/list/getGenericList', { FilterType: 'Department' });
-    const list = res.data?.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.map((d) => ({
-        Value: d.Value,
-        Label: d.Label,
-        DepartmentId: d.Value,
-        DepartmentName: d.Label,
-      }));
-    }
-  } catch {}
-
-  const resolvedOrgId = orgId || getStoredOrgId();
-  try {
-    const res = await api.post(
-      '/depart/getDepartmentList',
-      resolvedOrgId ? { OrganizationId: resolvedOrgId } : {}
-    );
-    return res.data?.data || [];
+    return (res.data?.data || []).map((d) => ({
+      Value: d.Value,
+      Label: d.Label,
+      DepartmentId: d.Value,
+      DepartmentName: d.Label,
+    }));
   } catch {
     return [];
   }
@@ -310,4 +256,12 @@ export const updateBudgetApprovalStatusApi = async (payload) => {
     ...payload,
   });
   return res.data?.data;
+};
+
+export const bulkUpdateBudgetApprovalStatusApi = async (requests) => {
+  const res = await api.post('/budget/request/approve-bulk', {
+    sys_user_id: getStoredUserId(),
+    requests,
+  });
+  return res.data;
 };
