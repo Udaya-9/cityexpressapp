@@ -226,9 +226,9 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
         particularTitle: (values.documentType || 'DOCUMENTS').toUpperCase(),
         particularSubtitle: (values.subject || '').trim(),
         fromName: (values.receivedFrom || '').trim(),
-        fromOrg: fromOrg || 'MAIN BRANCH',
+        fromOrg: fromOrg || undefined,
         receviedBy: loggedUser.id || undefined,
-        receivedBy: loggedUser.fullname || 'OFFICER',
+        receivedBy: loggedUser.fullname || loggedUser.name || loggedUser.username || undefined,
         receivedDate: `${new Date().toISOString().split('T')[0]} ${timeStr}`,
         type: 'incoming',
       };
@@ -257,10 +257,19 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
       const remarks = (values.remarks || '').trim();
       const departmentId = values.departmentId || departments[0]?.value;
 
+      const loggedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+
       const createdList = await batchCreateOutgoingApi({
         count,
         remarks,
         departmentId,
+        createdBy: values.createdBy || loggedUser.id || loggedUser.Id || null,
       });
 
       if (createdList && createdList.length > 0) {
@@ -288,7 +297,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
     marginBottom: 6,
   };
 
-  // Outgoing records table columns
+  // Outgoing records table columns matching UI specification
   const outgoingColumns = [
     {
       title: 'S.No',
@@ -300,48 +309,10 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
       ),
     },
     {
-      title: 'Created By',
-      dataIndex: 'receivedBy',
-      key: 'receivedBy',
-      width: 160,
-      render: (val, record) => (
-        <span style={{ fontWeight: 600, color: '#1e293b', textTransform: 'uppercase' }}>
-          {val || record.fromName || 'KISHAN'}
-        </span>
-      ),
-    },
-    {
-      title: 'Created Date',
-      dataIndex: 'receivedDate',
-      key: 'receivedDate',
-      width: 140,
-      render: (val) => {
-        if (!val) return '18-Oct-2026';
-        const d = new Date(val);
-        if (isNaN(d.getTime())) return String(val).slice(0, 10);
-        return d.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
-      },
-    },
-    {
-      title: 'Remarks',
-      dataIndex: 'remarks',
-      key: 'remarks',
-      render: (val) => (
-        <span style={{ color: '#334155', fontSize: 13 }}>
-          {val || '—'}
-        </span>
-      ),
-    },
-    {
-      title: 'Action',
+      title: 'Reference No',
       dataIndex: 'referenceId',
-      key: 'action',
+      key: 'referenceId',
       width: 220,
-      align: 'center',
       render: (val, record) => (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Tag
@@ -366,6 +337,44 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
             />
           </Tooltip>
         </div>
+      ),
+    },
+    {
+      title: 'Created By',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+      width: 160,
+      render: (val, record) => (
+        <span style={{ fontWeight: 600, color: '#1e293b', textTransform: 'uppercase' }}>
+          {val || record.createdBy || record.receivedBy || record.fromName || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'Created Date',
+      dataIndex: 'createdDate',
+      key: 'createdDate',
+      width: 140,
+      render: (val, record) => {
+        const dStr = val || record.createdDate || record.receivedDate;
+        if (!dStr) return '—';
+        const d = new Date(dStr);
+        if (isNaN(d.getTime())) return String(dStr).slice(0, 10);
+        return d.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+      },
+    },
+    {
+      title: 'Remarks',
+      dataIndex: 'remarks',
+      key: 'remarks',
+      render: (val) => (
+        <span style={{ color: '#334155', fontSize: 13 }}>
+          {val || '—'}
+        </span>
       ),
     },
   ];
@@ -451,17 +460,12 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
               onFinish={handleOutgoingGenerate}
               initialValues={{ count: 1 }}
             >
-              <Row gutter={24} align="top">
-                <Col xs={24} sm={8} md={6}>
+              <Row gutter={16} align="middle">
+                <Col xs={24} sm={12} md={4}>
                   <Form.Item
                     name="count"
                     label={<span style={labelStyle}>COUNT</span>}
                     rules={[{ required: true, message: 'Please enter count' }]}
-                    extra={
-                      <span style={{ fontSize: 11, color: '#64748b' }}>
-                        Enter the number of records to generate
-                      </span>
-                    }
                   >
                     <InputNumber
                       min={1}
@@ -472,7 +476,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={8} md={6}>
+                <Col xs={24} sm={12} md={5}>
                   <Form.Item
                     name="departmentId"
                     label={<span style={labelStyle}>DEPARTMENT</span>}
@@ -490,38 +494,59 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={8} md={8}>
+                <Col xs={24} sm={12} md={5}>
+                  <Form.Item
+                    name="createdBy"
+                    label={<span style={labelStyle}>CREATED BY</span>}
+                  >
+                    <Select
+                      placeholder="Select User"
+                      style={{ height: 42, width: '100%' }}
+                      allowClear
+                      showSearch
+                    >
+                      {users.map((u) => (
+                        <Option key={u.value} value={u.value}>
+                          {u.label}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={7}>
                   <Form.Item
                     name="remarks"
                     label={<span style={labelStyle}>REMARKS</span>}
                     rules={[{ required: true, message: 'Please enter remarks' }]}
                   >
-                    <Input.TextArea
-                      rows={2}
+                    <Input
                       placeholder="Enter remarks here..."
-                      style={{ borderRadius: 6, padding: '8px 12px', fontSize: 13 }}
+                      style={{ borderRadius: 6, padding: '8px 12px', fontSize: 13, height: 42 }}
                     />
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={24} md={4} style={{ display: 'flex', alignItems: 'center', marginTop: 28 }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={submitting}
-                    icon={<ThunderboltOutlined />}
-                    style={{
-                      background: '#6941c6',
-                      borderColor: '#6941c6',
-                      fontWeight: 700,
-                      fontSize: 14,
-                      height: 42,
-                      width: '100%',
-                      borderRadius: 6,
-                    }}
-                  >
-                    Generate
-                  </Button>
+                <Col xs={24} sm={24} md={3} style={{ display: 'flex', alignItems: 'center' }}>
+                  <Form.Item style={{ width: '100%', marginBottom: 0 }}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={submitting}
+                      icon={<ThunderboltOutlined />}
+                      style={{
+                        background: '#6941c6',
+                        borderColor: '#6941c6',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        height: 42,
+                        width: '100%',
+                        borderRadius: 6,
+                      }}
+                    >
+                      Generate
+                    </Button>
+                  </Form.Item>
                 </Col>
               </Row>
             </Form>

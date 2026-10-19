@@ -32,6 +32,7 @@ import {
   updateHandoverStatusApi,
   getDepartmentsApi,
   getUsersApi,
+  getFiscalYearsApi,
 } from '../API/correspondenceservice';
 import NepaliDate from 'nepali-date-converter';
 import NepaliDatePicker, { bsToAdString } from '../components/NepaliDatePicker';
@@ -85,16 +86,17 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [fiscalYears, setFiscalYears] = useState([]);
   const [rawDeptList, setRawDeptList] = useState([]);
   const [rawUserList, setRawUserList] = useState([]);
 
-  const [fiscalYear, setFiscalYear] = useState('FY2083_84');
+  const [fiscalYear, setFiscalYear] = useState(undefined);
   const [department, setDepartment] = useState(undefined);
   const [user, setUser] = useState(undefined);
   const [dateFilter, setDateFilter] = useState('');
 
   const [appliedFilters, setAppliedFilters] = useState({
-    fiscalYear: 'FY2083_84',
+    fiscalYear: undefined,
     department: undefined,
     user: undefined,
     dateFilter: '',
@@ -130,9 +132,10 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
     let isMounted = true;
     (async () => {
       try {
-        const [deptList, userList] = await Promise.all([
+        const [deptList, userList, fyList] = await Promise.all([
           getDepartmentsApi(),
           getUsersApi(),
+          getFiscalYearsApi(),
         ]);
         if (!isMounted) return;
         setRawDeptList(deptList || []);
@@ -140,6 +143,10 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
         if (deptList?.length) {
           const names = deptList.map((d) => (d.Label || d.DepartmentName || '').trim()).filter(Boolean);
           if (names.length) setDepartments(names);
+        }
+        if (fyList?.length) {
+          const fys = fyList.map((f) => (f.Label || f.FiscalYear || '').trim()).filter(Boolean);
+          if (fys.length) setFiscalYears(fys);
         }
       } catch (e) {
         console.error('Dropdown fetch error:', e);
@@ -196,12 +203,12 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
   };
 
   const handleReset = () => {
-    setFiscalYear('FY2083_84');
+    setFiscalYear(undefined);
     setDepartment(undefined);
     setUser(undefined);
     setDateFilter('');
     setAppliedFilters({
-      fiscalYear: 'FY2083_84',
+      fiscalYear: undefined,
       department: undefined,
       user: undefined,
       dateFilter: '',
@@ -242,11 +249,20 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
         ? nowBs.bsFormatted
         : `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}`;
 
+      const loggedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || '{}');
+        } catch {
+          return {};
+        }
+      })();
+      const currentUser = loggedUser.fullname || loggedUser.name || loggedUser.username || '';
+
       const updated = await updateHandoverStatusApi({
         key: ackModalRecord.key,
         referenceId: ackModalRecord.referenceId,
         handoverStatus: 'ACKNOWLEDGED',
-        handoverBy: 'SHUVAM',
+        handoverBy: currentUser || undefined,
         handoverDate: formattedDate,
       });
 
@@ -258,7 +274,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             ...ackModalRecord,
             handoverStatus: 'ACKNOWLEDGED',
             handoverDate: formattedDate,
-            handoverBy: 'SHUVAM',
+            handoverBy: currentUser || undefined,
           }
         );
       }
@@ -284,7 +300,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       dataIndex: 'fiscalYear',
       key: 'fiscalYear',
       width: 110,
-      render: (val) => <Text style={{ color: C.text, fontWeight: 500 }}>{val || 'FY2083_84'}</Text>,
+      render: (val) => <Text style={{ color: C.text, fontWeight: 500 }}>{val || '—'}</Text>,
     },
     {
       title: 'PARTICULAR',
@@ -293,10 +309,10 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, textTransform: 'uppercase' }}>
-            {record.particularTitle || record.documentType || 'DOCUMENTS'}
+            {record.particularTitle || record.documentType || '—'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.particularSubtitle || record.remarks || 'DOCUMENT RECEIVED'}
+            {record.particularSubtitle || record.remarks || '—'}
           </div>
         </div>
       ),
@@ -308,10 +324,10 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, textTransform: 'uppercase' }}>
-            {record.fromName || record.receivedFrom}
+            {record.fromName || record.receivedFrom || '—'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.fromOrg || record.vendorName || record.location || 'MAIN BRANCH'}
+            {record.fromOrg || record.vendorName || record.location || '—'}
           </div>
         </div>
       ),
@@ -323,7 +339,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       width: 120,
       render: (val) => (
         <Text style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
-          {val || 'BIMALA'}
+          {val || '—'}
         </Text>
       ),
     },
@@ -349,7 +365,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             {record.forwardedToName || record.user || '—'}
           </div>
           <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', marginTop: 2 }}>
-            {record.forwardedToDept || record.department || 'INFORMATION TECHNOLOGY'}
+            {record.forwardedToDept || record.department || '—'}
           </div>
         </div>
       ),
@@ -376,7 +392,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
               ACKNOWLEDGED
             </Tag>
             <div style={{ marginTop: 4, fontSize: 11, color: C.text, fontWeight: 600 }}>
-              {record.handoverDate || '23 Jul 2026 14:18'}
+              {record.handoverDate || '—'}
               {record.handoverBy && (
                 <span style={{ display: 'block', color: C.muted, fontWeight: 500, fontSize: 10, textTransform: 'uppercase' }}>
                   {record.handoverBy}
@@ -450,50 +466,18 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
       title: 'Department',
       dataIndex: 'department',
       key: 'department',
-      width: 220,
+      width: 200,
       render: (val, record) => (
         <span style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
-          {val || record.forwardedToDept || 'INFORMATION TECHNOLOGY'}
+          {val || record.forwardedToDept || '—'}
         </span>
       ),
     },
     {
-      title: 'Created Date',
-      dataIndex: 'receivedDate',
-      key: 'receivedDate',
-      width: 140,
-      render: (val) => {
-        if (!val) return '—';
-        const d = new Date(val);
-        return isNaN(d.getTime())
-          ? String(val).slice(0, 10)
-          : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      },
-    },
-    {
-      title: 'Created By',
-      dataIndex: 'receivedBy',
-      key: 'receivedBy',
-      width: 140,
-      render: (val, record) => (
-        <span style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
-          {val || record.fromName || 'KISHAN'}
-        </span>
-      ),
-    },
-    {
-      title: 'Remarks',
-      dataIndex: 'remarks',
-      key: 'remarks',
-      render: (val) => <span style={{ color: '#334155', fontSize: 13 }}>{val || '—'}</span>,
-    },
-    {
-      title: 'Action',
+      title: 'Reference No',
       dataIndex: 'referenceId',
-      key: 'action',
-      width: 180,
-      align: 'center',
-      fixed: 'right',
+      key: 'referenceId',
+      width: 190,
       render: (val, record) => (
         <a
           href="#detail"
@@ -503,18 +487,49 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
           }}
           style={{
             color: '#1a73e8',
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: 12,
-            letterSpacing: '0.2px',
+            fontFamily: 'monospace',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 4,
+            gap: 5,
           }}
         >
           <EyeOutlined />
           <span>{val}</span>
         </a>
       ),
+    },
+    {
+      title: 'Created Date',
+      dataIndex: 'createdDate',
+      key: 'createdDate',
+      width: 140,
+      render: (val, record) => {
+        const dStr = val || record.createdDate || record.receivedDate;
+        if (!dStr) return '—';
+        const d = new Date(dStr);
+        return isNaN(d.getTime())
+          ? String(dStr).slice(0, 10)
+          : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+    },
+    {
+      title: 'Created By',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+      width: 160,
+      render: (val, record) => (
+        <span style={{ fontWeight: 600, color: C.text, textTransform: 'uppercase', fontSize: 12 }}>
+          {val || record.createdBy || record.receivedBy || record.fromName || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'Remarks',
+      dataIndex: 'remarks',
+      key: 'remarks',
+      render: (val) => <span style={{ color: '#334155', fontSize: 13 }}>{val || '—'}</span>,
     },
   ];
 
@@ -602,10 +617,19 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                 <CalendarOutlined style={{ marginRight: 6 }} />
                 FISCAL YEAR
               </div>
-              <Select value={fiscalYear} onChange={setFiscalYear} style={{ width: '100%', height: 36 }} placeholder="Select Fiscal Year">
-                <Option value="FY2083_84">FY2083_84</Option>
-                <Option value="FY2082_83">FY2082_83</Option>
-                <Option value="FY2081_82">FY2081_82</Option>
+              <Select
+                value={fiscalYear}
+                onChange={setFiscalYear}
+                style={{ width: '100%', height: 36 }}
+                placeholder="-- Select Fiscal Year --"
+                allowClear
+                showSearch
+              >
+                {fiscalYears.map((fy) => (
+                  <Option key={fy} value={fy}>
+                    {fy}
+                  </Option>
+                ))}
               </Select>
             </Col>
 
@@ -850,7 +874,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                 <Col span={12}>
                   <Text type="secondary" style={{ fontSize: 11 }}>DATE</Text>
                   <div style={{ fontWeight: 600, color: C.text }}>
-                    {selectedRecord.receivedDate}
+                    {selectedRecord.createdDate || selectedRecord.receivedDate || '—'}
                   </div>
                 </Col>
                 <Col span={12}>
@@ -880,12 +904,18 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
 
             <Row gutter={[16, 12]}>
               <Col span={12}>
-                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>SENDER / FROM</Text>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>
+                  {selectedRecord.type === 'outgoing' ? 'CREATED BY' : 'SENDER / FROM'}
+                </Text>
                 <div style={{ fontWeight: 600, color: C.text, marginTop: 2 }}>
-                  {selectedRecord.fromName || selectedRecord.receivedFrom || '—'}
+                  {selectedRecord.type === 'outgoing'
+                    ? (selectedRecord.createdBy || selectedRecord.receivedBy || selectedRecord.fromName || '—')
+                    : (selectedRecord.fromName || selectedRecord.receivedFrom || '—')}
                 </div>
                 <div style={{ fontSize: 12, color: C.muted }}>
-                  {selectedRecord.fromOrg || selectedRecord.vendorName || '—'}
+                  {selectedRecord.type === 'outgoing'
+                    ? ''
+                    : (selectedRecord.fromOrg || selectedRecord.vendorName || '')}
                 </div>
               </Col>
               <Col span={12}>
