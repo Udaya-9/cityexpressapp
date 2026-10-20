@@ -88,7 +88,7 @@ const BudgetApproval = () => {
   }, []);
 
   const loadRequests = useCallback(async () => {
-    if (!fiscalYear || !department) {
+    if (!fiscalYear) {
       setRequests([]);
       return;
     }
@@ -96,7 +96,7 @@ const BudgetApproval = () => {
       setLoading(true);
       const data = await getBudgetRequestsApi({
         fiscalYear,
-        departmentId: department,
+        departmentId: department || null,
       });
       const list = Array.isArray(data) ? data : [];
       setRequests(list);
@@ -105,8 +105,9 @@ const BudgetApproval = () => {
       const amounts = {};
       list.forEach((item) => {
         const key = item.id || item.code;
-        statuses[key] = item.status || 'Approve';
-        amounts[key] = item.approvedAmount !== undefined ? item.approvedAmount : (item.requestedAmount || 0);
+        statuses[key] = item.status === 'Rejected' ? 'Reject' : 'Approve';
+        const isApprovedWithAmount = item.status === 'Approved' && Number(item.approvedAmount) > 0;
+        amounts[key] = isApprovedWithAmount ? Number(item.approvedAmount) : Number(item.requestedAmount || 0);
       });
       setApprovalStatuses(statuses);
       setApprovedAmounts(amounts);
@@ -121,11 +122,22 @@ const BudgetApproval = () => {
     loadRequests();
   }, [loadRequests]);
 
-  const handleStatusChange = (key, val) => {
+  const handleStatusChange = (key, val, requestedAmt = 0) => {
     setApprovalStatuses((prev) => ({
       ...prev,
       [key]: val,
     }));
+    if (val === 'Approve') {
+      setApprovedAmounts((prev) => ({
+        ...prev,
+        [key]: prev[key] && Number(prev[key]) > 0 ? prev[key] : (requestedAmt || 0),
+      }));
+    } else if (val === 'Reject') {
+      setApprovedAmounts((prev) => ({
+        ...prev,
+        [key]: 0,
+      }));
+    }
   };
 
   const handleAmountChange = (key, val) => {
@@ -190,10 +202,11 @@ const BudgetApproval = () => {
         const key = item.id || item.code;
         const chosen = approvalStatuses[key] || 'Approve';
         const status = chosen === 'Reject' || chosen === 'Rejected' ? 'Rejected' : 'Approved';
+        const enteredAmt = approvedAmounts[key];
         const approvedAmount =
           status === 'Rejected'
             ? 0
-            : Number(approvedAmounts[key] !== undefined ? approvedAmounts[key] : (item.requestedAmount || 0));
+            : Number(enteredAmt !== undefined && enteredAmt !== null && Number(enteredAmt) > 0 ? enteredAmt : (item.requestedAmount || 0));
         return { id: item.id, status, approvedAmount };
       });
 
@@ -506,8 +519,9 @@ const BudgetApproval = () => {
                               </Tag>
                             ) : (
                               <Radio.Group
-                                value={statusVal}
-                                onChange={(e) => handleStatusChange(key, e.target.value)}
+                                value={statusVal || 'Approve'}
+                                defaultValue="Approve"
+                                onChange={(e) => handleStatusChange(key, e.target.value, item.requestedAmount)}
                               >
                                 <Radio
                                   value="Approve"

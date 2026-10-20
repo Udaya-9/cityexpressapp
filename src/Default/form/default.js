@@ -296,6 +296,7 @@ const Dashboard = ({ children }) => {
 
         if (d.FiscalYear) {
           setFiscalYear(d.FiscalYear || FALLBACK_FY);
+          localStorage.setItem('fiscalYear', d.FiscalYear);
         }
       } catch (err) {
         // handled globally
