@@ -9,6 +9,9 @@ import {
   message,
   Empty,
   Typography,
+  Alert,
+  Tag,
+  Input,
 } from 'antd';
 import {
   FileTextOutlined,
@@ -30,6 +33,7 @@ import {
   getBudgetSubheadingsApi,
   getBudgetRequestsApi,
   submitBudgetRequestApi,
+  getStaticDataApi,
 } from '../API/budgetservice';
 
 const { Text } = Typography;
@@ -65,11 +69,13 @@ const BudgetManagement = () => {
   const [subheadings, setSubheadings] = useState([]);
 
   // Filter options for List view (Image 1)
+  const [reportTypes, setReportTypes] = useState([]);
   const [reportTypeFilter, setReportTypeFilter] = useState(undefined);
   const [departmentFilter, setDepartmentFilter] = useState(undefined);
   const [fiscalYearFilter, setFiscalYearFilter] = useState(undefined);
   const [headingFilter, setHeadingFilter] = useState(undefined);
   const [subHeadingFilter, setSubHeadingFilter] = useState(undefined);
+  const [requestTypeFilter, setRequestTypeFilter] = useState('ALL');
 
   const [appliedFilters, setAppliedFilters] = useState({
     reportType: undefined,
@@ -77,6 +83,7 @@ const BudgetManagement = () => {
     fiscalYear: undefined,
     heading: undefined,
     subHeading: undefined,
+    requestType: 'ALL',
   });
 
   const [budgetList, setBudgetList] = useState([]);
@@ -85,6 +92,9 @@ const BudgetManagement = () => {
   // States for Create view (Image 2)
   const [createFiscalYear, setCreateFiscalYear] = useState(undefined);
   const [createHeadingFilter, setCreateHeadingFilter] = useState('ALL');
+  const [createRequestType, setCreateRequestType] = useState('Annual Budget'); // 'Annual Budget' | 'onDemand Budget'
+  const [existingAnnualApproved, setExistingAnnualApproved] = useState(false);
+  const [onDemandRemarks, setOnDemandRemarks] = useState({});
   const [createHeadings, setCreateHeadings] = useState([]);
   const [createSubheadings, setCreateSubheadings] = useState([]);
   const [requestedAmounts, setRequestedAmounts] = useState({});
@@ -94,13 +104,15 @@ const BudgetManagement = () => {
     let isMounted = true;
     (async () => {
       try {
-        const [fyList, deptList] = await Promise.all([
+        const [fyList, deptList, reportTypeList] = await Promise.all([
           getFiscalYearsApi(),
           getDepartmentsApi(),
+          getStaticDataApi('Report'),
         ]);
         if (!isMounted) return;
         setFiscalYears(fyList || []);
         setDepartments(deptList || []);
+        setReportTypes(reportTypeList || []);
 
         if (fyList?.length) {
           const firstFy = fyList[0]?.Value || fyList[0]?.FiscalYear || fyList[0]?.Label || fyList[0];
@@ -144,6 +156,7 @@ const BudgetManagement = () => {
         fiscalYear: filters.fiscalYear,
         departmentId: filters.department,
         reportType: filters.reportType,
+        requestType: filters.requestType && filters.requestType !== 'ALL' ? filters.requestType : undefined,
       });
       let result = Array.isArray(data) ? data : [];
       if (filters.heading) {
@@ -151,6 +164,13 @@ const BudgetManagement = () => {
       }
       if (filters.subHeading) {
         result = result.filter((r) => r.subHeading === filters.subHeading || r.code === filters.subHeading);
+      }
+      if (filters.requestType && filters.requestType !== 'ALL') {
+        const isD = filters.requestType.toLowerCase().includes('demand');
+        result = result.filter((r) => {
+          const itemD = String(r.requestType || '').toLowerCase().includes('demand');
+          return isD ? itemD : !itemD;
+        });
       }
       setBudgetList(result);
     } catch {
@@ -173,6 +193,7 @@ const BudgetManagement = () => {
       fiscalYear: fiscalYearFilter,
       heading: headingFilter,
       subHeading: subHeadingFilter,
+      requestType: requestTypeFilter,
     });
   };
 
@@ -181,6 +202,7 @@ const BudgetManagement = () => {
     setDepartmentFilter(undefined);
     setHeadingFilter(undefined);
     setSubHeadingFilter(undefined);
+    setRequestTypeFilter('ALL');
     const defaultFy = fiscalYears[0]?.Value || fiscalYears[0]?.FiscalYear || fiscalYears[0]?.Label;
     setFiscalYearFilter(defaultFy);
     setAppliedFilters({
@@ -189,45 +211,91 @@ const BudgetManagement = () => {
       fiscalYear: defaultFy,
       heading: undefined,
       subHeading: undefined,
+      requestType: 'ALL',
     });
   };
 
   useEffect(() => {
     if (viewMode === 'create' && createFiscalYear) {
+      let isMounted = true;
       (async () => {
         try {
-          const [hList, sList] = await Promise.all([
+          const [hList, sList, reqList] = await Promise.all([
             getBudgetHeadingsApi(createFiscalYear),
             getBudgetSubheadingsApi(createFiscalYear),
+            getBudgetRequestsApi({ fiscalYear: createFiscalYear }),
           ]);
+          if (!isMounted) return;
           setCreateHeadings(Array.isArray(hList) ? hList : []);
           setCreateSubheadings(Array.isArray(sList) ? sList : []);
+
+          const loggedUser = (() => {
+            try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
+          })();
+          const deptId = loggedUser.departmentId || loggedUser.DepartmentId || null;
+
+          const deptReqs = (Array.isArray(reqList) ? reqList : []).filter(
+            (r) => (deptId ? r.departmentId === deptId : false)
+          );
+          const annualReqs = deptReqs.filter(
+            (r) => !String(r.requestType || '').toLowerCase().includes('demand')
+          );
+          const isApproved = deptId
+            ? annualReqs.some((r) => String(r.status || '').toLowerCase().startsWith('approv'))
+            : false;
+          const isPending = deptId
+            ? annualReqs.some((r) => String(r.status || '').toLowerCase() === 'pending')
+            : false;
+
+          setExistingAnnualApproved(isApproved);
+
+          if (isPending) {
+            const prefill = {};
+            annualReqs.forEach((r) => {
+              const k = r.BudgetSubHeadId || r.code || r.subHeadingCode;
+              if (k) prefill[k] = r.requestedAmount;
+            });
+            setRequestedAmounts((prev) => ({ ...prefill, ...prev }));
+          }
         } catch {
           message.error('Failed to load budget categories');
         }
       })();
+      return () => {
+        isMounted = false;
+      };
     }
   }, [viewMode, createFiscalYear]);
 
   const groupedCreateHeadings = useMemo(() => {
-    return createHeadings.map((head) => {
-      const headCode = (head.code || head.headingCode || '').trim();
-      const headTitle = (head.heading || head.title || '').trim();
-      const headId = head.BudgetHeadId || head.id;
-      const items = createSubheadings.filter(
-        (s) =>
-          (headId && s.BudgetHeadId && s.BudgetHeadId === headId) ||
-          (headCode && (s.headingCode || '').trim() === headCode) ||
-          (headTitle && (s.headingTitle || '').trim().toLowerCase() === headTitle.toLowerCase())
-      );
-      return {
-        ...head,
-        code: headCode,
-        heading: headTitle,
-        subheadings: items,
-      };
-    });
-  }, [createHeadings, createSubheadings]);
+    return createHeadings
+      .map((head) => {
+        const headCode = (head.code || head.headingCode || '').trim();
+        const headTitle = (head.heading || head.title || '').trim();
+        const headId = head.BudgetHeadId || head.id;
+        const items = createSubheadings.filter((s) => {
+          const matchesHead =
+            (headId && s.BudgetHeadId && s.BudgetHeadId === headId) ||
+            (headCode && (s.headingCode || '').trim() === headCode) ||
+            (headTitle && (s.headingTitle || '').trim().toLowerCase() === headTitle.toLowerCase());
+          if (!matchesHead) return false;
+
+          const sType = String(s.requestType || '').toLowerCase();
+          if (createRequestType === 'onDemand Budget') {
+            return sType.includes('demand');
+          } else {
+            return !sType.includes('demand');
+          }
+        });
+        return {
+          ...head,
+          code: headCode,
+          heading: headTitle,
+          subheadings: items,
+        };
+      })
+      .filter((head) => head.subheadings.length > 0);
+  }, [createHeadings, createSubheadings, createRequestType]);
 
   const displayedCreateHeadings = useMemo(() => {
     if (!createHeadingFilter || createHeadingFilter === 'ALL') {
@@ -263,6 +331,11 @@ const BudgetManagement = () => {
   }, [subtotals]);
 
   const handleSubmitBudget = async () => {
+    if (createRequestType === 'Annual Budget' && existingAnnualApproved) {
+      message.warning('The annual budget for this department has already been approved and locked.');
+      return;
+    }
+
     if (grandTotal <= 0) {
       message.warning('Please enter an amount greater than 0');
       return;
@@ -285,6 +358,8 @@ const BudgetManagement = () => {
               amount: amt,
               BudgetHeadId: head.BudgetHeadId || head.id || null,
               BudgetSubHeadId: sub.BudgetSubHeadId || sub.id || null,
+              requestType: createRequestType,
+              remarks: onDemandRemarks[key] || null,
             });
           }
         });
@@ -302,10 +377,15 @@ const BudgetManagement = () => {
       await submitBudgetRequestApi({
         fiscalYear: createFiscalYear,
         departmentId: deptId,
+        requestType: createRequestType,
         items,
       });
 
-      message.success('Budget request submitted successfully!');
+      message.success(
+        `${createRequestType === 'onDemand Budget' ? 'On-Demand budget request' : 'Annual budget package'} submitted successfully!`
+      );
+      setRequestedAmounts({});
+      setOnDemandRemarks({});
       setViewMode('list');
       loadListData(appliedFilters);
     } catch (err) {
@@ -383,6 +463,20 @@ const BudgetManagement = () => {
       render: (val) => <span>{val || '—'}</span>,
     },
     {
+      title: 'TYPE',
+      dataIndex: 'requestType',
+      key: 'requestType',
+      width: 120,
+      render: (val) => {
+        const isD = String(val || '').toLowerCase().includes('demand');
+        return (
+          <Tag color={isD ? 'geekblue' : 'blue'} style={{ fontWeight: 600, borderRadius: 4, margin: 0, fontSize: 11 }}>
+            {isD ? 'On-Demand' : 'Annual'}
+          </Tag>
+        );
+      },
+    },
+    {
       title: 'REQUESTED AMOUNT',
       dataIndex: 'requestedAmount',
       key: 'requestedAmount',
@@ -413,6 +507,101 @@ const BudgetManagement = () => {
     },
   ];
 
+  const summaryColumns = [
+    {
+      title: 'HEADING CODE',
+      dataIndex: 'headingCode',
+      key: 'headingCode',
+      width: 140,
+      render: (val) => (
+        <span style={{ fontWeight: 700, color: C.brand, background: '#e8f0fe', padding: '2px 8px', borderRadius: 4 }}>
+          {val || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'HEADING',
+      dataIndex: 'heading',
+      key: 'heading',
+      render: (val) => <span style={{ fontWeight: 600, color: C.text }}>{val || '—'}</span>,
+    },
+    {
+      title: 'DEPARTMENT',
+      dataIndex: 'department',
+      key: 'department',
+      render: (val) => <span style={{ color: C.subtext }}>{val || '—'}</span>,
+    },
+    {
+      title: 'FISCAL YEAR',
+      dataIndex: 'fiscalYear',
+      key: 'fiscalYear',
+      render: (val) => <span>{val || '—'}</span>,
+    },
+    {
+      title: 'TYPE',
+      dataIndex: 'requestType',
+      key: 'requestType',
+      width: 120,
+      render: (val) => {
+        const isD = String(val || '').toLowerCase().includes('demand');
+        return (
+          <Tag color={isD ? 'geekblue' : 'blue'} style={{ fontWeight: 600, borderRadius: 4, margin: 0, fontSize: 11 }}>
+            {isD ? 'On-Demand' : 'Annual'}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'ITEMS COUNT',
+      dataIndex: 'itemCount',
+      key: 'itemCount',
+      align: 'center',
+      render: (val) => <span style={{ fontWeight: 600 }}>{val}</span>,
+    },
+    {
+      title: 'TOTAL REQUESTED',
+      dataIndex: 'totalRequested',
+      key: 'totalRequested',
+      align: 'right',
+      render: (val) => <span style={{ fontWeight: 700, color: C.darkNavy }}>{formatCurrency(val)}</span>,
+    },
+    {
+      title: 'TOTAL APPROVED',
+      dataIndex: 'totalApproved',
+      key: 'totalApproved',
+      align: 'right',
+      render: (val) => <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(val)}</span>,
+    },
+  ];
+
+  const summaryData = useMemo(() => {
+    const map = {};
+    budgetList.forEach((item) => {
+      const isD = String(item.requestType || '').toLowerCase().includes('demand');
+      const typeLabel = isD ? 'On-Demand' : 'Annual';
+      const groupKey = `${item.headingCode || item.heading}_${item.department || ''}_${item.fiscalYear || ''}_${typeLabel}`;
+      if (!map[groupKey]) {
+        map[groupKey] = {
+          key: groupKey,
+          headingCode: item.headingCode || '—',
+          heading: item.heading || '—',
+          department: item.department || '—',
+          fiscalYear: item.fiscalYear || '—',
+          requestType: typeLabel,
+          itemCount: 0,
+          totalRequested: 0,
+          totalApproved: 0,
+        };
+      }
+      map[groupKey].itemCount += 1;
+      map[groupKey].totalRequested += Number(item.requestedAmount || 0);
+      map[groupKey].totalApproved += Number(item.approvedAmount || 0);
+    });
+    return Object.values(map);
+  }, [budgetList]);
+
+  const isSummaryMode = /summary/i.test(appliedFilters.reportType || '');
+
   return (
     <div style={{ padding: '4px 0' }}>
       {viewMode === 'list' ? (
@@ -431,13 +620,14 @@ const BudgetManagement = () => {
               style={{
                 background: '#01519b',
                 borderColor: '#01519b',
+                color: '#ffffff',
                 fontWeight: 600,
                 height: 38,
                 borderRadius: 6,
                 padding: '0 18px',
               }}
             >
-              + Create Budget
+              <span style={{ color: '#ffffff' }}>+ Create Budget</span>
             </Button>
           </div>
 
@@ -469,7 +659,7 @@ const BudgetManagement = () => {
 
             <div style={{ padding: '18px 20px 16px' }}>
               <Row gutter={[12, 12]}>
-                <Col xs={24} sm={12} md={5}>
+                <Col xs={24} sm={12} md={4}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FileTextOutlined style={{ color: C.brand }} />
                     <span>Report Type</span>
@@ -481,14 +671,18 @@ const BudgetManagement = () => {
                     allowClear
                     style={{ width: '100%', height: 38 }}
                   >
-                    <Option value="Financial">Financial Budget</Option>
-                    <Option value="Non-Financial">Non-Financial Budget</Option>
-                    <Option value="Annual Budget">Annual Budget</Option>
-                    <Option value="onDemand Budget">onDemand Budget</Option>
+                    {(reportTypes.length ? reportTypes : [{ Label: 'Summary' }, { Label: 'Detail' }]).map((rt) => {
+                      const displayLabel = rt.Label?.toLowerCase().endsWith('report') ? rt.Label : `${rt.Label} Report`;
+                      return (
+                        <Option key={rt.Value || rt.Label || displayLabel} value={displayLabel}>
+                          {displayLabel}
+                        </Option>
+                      );
+                    })}
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={5}>
+                <Col xs={24} sm={12} md={4}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ApartmentOutlined style={{ color: C.brand }} />
                     <span>Department</span>
@@ -536,7 +730,7 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={5}>
+                <Col xs={24} sm={12} md={4}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <UnorderedListOutlined style={{ color: C.brand }} />
                     <span>Heading</span>
@@ -561,7 +755,7 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={5}>
+                <Col xs={24} sm={12} md={4}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <TagOutlined style={{ color: C.brand }} />
                     <span>Sub Heading</span>
@@ -585,6 +779,22 @@ const BudgetManagement = () => {
                     })}
                   </Select>
                 </Col>
+
+                <Col xs={24} sm={12} md={4}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <DollarCircleOutlined style={{ color: C.brand }} />
+                    <span>Request Type</span>
+                  </div>
+                  <Select
+                    value={requestTypeFilter}
+                    onChange={setRequestTypeFilter}
+                    style={{ width: '100%', height: 38 }}
+                  >
+                    <Option value="ALL">All Types</Option>
+                    <Option value="Annual Budget">Annual Budget</Option>
+                    <Option value="onDemand Budget">On-Demand Budget</Option>
+                  </Select>
+                </Col>
               </Row>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
@@ -606,15 +816,16 @@ const BudgetManagement = () => {
                   type="primary"
                   onClick={handleApplyFilter}
                   style={{
-                    background: '#7c3aed',
-                    borderColor: '#7c3aed',
+                    background: '#01519b',
+                    borderColor: '#01519b',
+                    color: '#ffffff',
                     fontWeight: 600,
                     height: 36,
                     borderRadius: 6,
                     padding: '0 20px',
                   }}
                 >
-                  Apply Filter
+                  <span style={{ color: '#ffffff' }}>Apply Filter</span>
                 </Button>
               </div>
             </div>
@@ -628,7 +839,22 @@ const BudgetManagement = () => {
               overflow: 'hidden',
             }}
           >
-            {budgetList.length > 0 ? (
+            {isSummaryMode ? (
+              summaryData.length > 0 ? (
+                <Table
+                  dataSource={summaryData}
+                  columns={summaryColumns}
+                  rowKey="key"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
+                  size="middle"
+                />
+              ) : (
+                <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+                  <Empty description="No budget summary records found for the selected filters." />
+                </div>
+              )
+            ) : budgetList.length > 0 ? (
               <Table
                 dataSource={budgetList}
                 columns={listColumns}
@@ -700,60 +926,87 @@ const BudgetManagement = () => {
               borderRadius: 8,
               padding: '12px 18px',
               color: '#ffffff',
-              marginBottom: 20,
+              marginBottom: 16,
               display: 'flex',
-              gap: 24,
+              gap: 20,
               flexWrap: 'wrap',
               alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
-                SELECT FISCAL YEAR
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
+                  SELECT FISCAL YEAR
+                </div>
+                <Select
+                  value={createFiscalYear}
+                  onChange={(val) => {
+                    setCreateFiscalYear(val);
+                    setCreateHeadingFilter('ALL');
+                  }}
+                  style={{ width: 220, height: 38 }}
+                >
+                  {fiscalYears.map((fy) => {
+                    const val = fy.Value || fy.FiscalYear || fy.Label || fy;
+                    const lbl = fy.Label || fy.FiscalYear || fy.Value || fy;
+                    return (
+                      <Option key={val} value={val}>
+                        {lbl}
+                      </Option>
+                    );
+                  })}
+                </Select>
               </div>
-              <Select
-                value={createFiscalYear}
-                onChange={(val) => {
-                  setCreateFiscalYear(val);
-                  setCreateHeadingFilter('ALL');
-                }}
-                style={{ width: 260, height: 38 }}
-              >
-                {fiscalYears.map((fy) => {
-                  const val = fy.Value || fy.FiscalYear || fy.Label || fy;
-                  const lbl = fy.Label || fy.FiscalYear || fy.Value || fy;
-                  return (
-                    <Option key={val} value={val}>
-                      {lbl}
-                    </Option>
-                  );
-                })}
-              </Select>
-            </div>
 
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
-                SELECT HEADING
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
+                  SELECT HEADING
+                </div>
+                <Select
+                  value={createHeadingFilter}
+                  onChange={setCreateHeadingFilter}
+                  placeholder="--Select Heading--"
+                  style={{ width: 220, height: 38 }}
+                >
+                  <Option value="ALL">-- All Headings --</Option>
+                  {createHeadings.map((h) => {
+                    const val = (h.code || h.headingCode || '').trim();
+                    const lbl = `${val ? val + ' - ' : ''}${h.heading || h.title}`;
+                    return (
+                      <Option key={val} value={val}>
+                        {lbl}
+                      </Option>
+                    );
+                  })}
+                </Select>
               </div>
-              <Select
-                value={createHeadingFilter}
-                onChange={setCreateHeadingFilter}
-                placeholder="--Select Heading--"
-                style={{ width: 260, height: 38 }}
-              >
-                <Option value="ALL">-- All Headings --</Option>
-                {createHeadings.map((h) => {
-                  const val = (h.code || h.headingCode || '').trim();
-                  const lbl = `${val ? val + ' - ' : ''}${h.heading || h.title}`;
-                  return (
-                    <Option key={val} value={val}>
-                      {lbl}
-                    </Option>
-                  );
-                })}
-              </Select>
+
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', marginBottom: 6, textTransform: 'uppercase' }}>
+                  BUDGET TYPE
+                </div>
+                <Select
+                  value={createRequestType}
+                  onChange={setCreateRequestType}
+                  style={{ width: 220, height: 38 }}
+                >
+                  <Option value="Annual Budget">Annual Budget</Option>
+                  <Option value="onDemand Budget">On-Demand Budget</Option>
+                </Select>
+              </div>
             </div>
           </div>
+
+          {createRequestType === 'Annual Budget' && existingAnnualApproved && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Annual Budget Locked"
+              description={`The annual budget for FY ${createFiscalYear} has already been approved. Only 1 Annual Budget is allowed per department per fiscal year. Please select On-Demand Budget for additional requests.`}
+              style={{ marginBottom: 20 }}
+            />
+          )}
 
           {displayedCreateHeadings.length === 0 ? (
             <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: 40, textAlign: 'center' }}>
@@ -834,19 +1087,34 @@ const BudgetManagement = () => {
                                 {sub.subHeadingTitle || sub.title}
                               </td>
                               <td style={{ padding: '12px 18px', textAlign: 'right' }}>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid #cbd5e1`, borderRadius: 4, overflow: 'hidden' }}>
-                                  <span style={{ background: '#01519b', color: '#ffffff', padding: '6px 10px', fontSize: 12, fontWeight: 600 }}>
-                                    Rs.
-                                  </span>
-                                  <InputNumber
-                                    min={0}
-                                    bordered={false}
-                                    value={requestedAmounts[key] || 0}
-                                    onChange={(val) => handleAmountChange(key, val)}
-                                    formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                    parser={(val) => (val ? val.replace(/\$\s?|(,*)/g, '') : '')}
-                                    style={{ width: 140, textAlign: 'right' }}
-                                  />
+                                <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid #cbd5e1`, borderRadius: 4, overflow: 'hidden' }}>
+                                    <span style={{ background: '#01519b', color: '#ffffff', padding: '6px 10px', fontSize: 12, fontWeight: 600 }}>
+                                      Rs.
+                                    </span>
+                                    <InputNumber
+                                      min={0}
+                                      bordered={false}
+                                      disabled={createRequestType === 'Annual Budget' && existingAnnualApproved}
+                                      value={requestedAmounts[key] || 0}
+                                      onChange={(val) => handleAmountChange(key, val)}
+                                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                      parser={(val) => (val ? val.replace(/\$\s?|(,*)/g, '') : '')}
+                                      style={{ width: 140, textAlign: 'right' }}
+                                    />
+                                  </div>
+                                  {createRequestType === 'onDemand Budget' && (
+                                    <Input
+                                      placeholder="Remarks"
+                                      size="small"
+                                      value={onDemandRemarks[key] || ''}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setOnDemandRemarks((prev) => ({ ...prev, [key]: v }));
+                                      }}
+                                      style={{ width: 180, fontSize: 12 }}
+                                    />
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -902,7 +1170,9 @@ const BudgetManagement = () => {
                     <DollarCircleOutlined />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>Total Budget Request</div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>
+                      Total {createRequestType === 'onDemand Budget' ? 'On-Demand Request' : 'Annual Budget Request'}
+                    </div>
                     <div style={{ fontSize: 11, opacity: 0.8 }}>Sum of all sub-headings</div>
                   </div>
                 </div>
@@ -913,22 +1183,32 @@ const BudgetManagement = () => {
               </div>
 
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={submitting}
-                  onClick={handleSubmitBudget}
-                  style={{
-                    background: '#01519b',
-                    borderColor: '#01519b',
-                    fontWeight: 700,
-                    height: 42,
-                    borderRadius: 6,
-                    padding: '0 36px',
-                  }}
-                >
-                  Submit Budget Request
-                </Button>
+                {(() => {
+                  const isLocked = createRequestType === 'Annual Budget' && existingAnnualApproved;
+                  return (
+                    <Button
+                      type="primary"
+                      size="large"
+                      loading={submitting}
+                      disabled={isLocked}
+                      onClick={handleSubmitBudget}
+                      style={{
+                        background: isLocked ? '#cbd5e1' : '#01519b',
+                        borderColor: isLocked ? '#cbd5e1' : '#01519b',
+                        color: isLocked ? '#64748b' : '#ffffff',
+                        fontWeight: 700,
+                        height: 42,
+                        borderRadius: 6,
+                        padding: '0 36px',
+                        cursor: isLocked ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <span style={{ color: isLocked ? '#64748b' : '#ffffff', fontWeight: 700 }}>
+                        {isLocked ? 'Annual Budget Locked (Already Approved)' : 'Submit Budget Request'}
+                      </span>
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
           )}

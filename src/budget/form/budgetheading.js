@@ -41,6 +41,7 @@ import {
   updateBudgetSubheadingApi,
   deleteBudgetSubheadingApi,
   copyBudgetStructureApi,
+  getStaticDataApi,
 } from '../API/budgetservice';
 
 const { Text } = Typography;
@@ -92,14 +93,19 @@ const BudgetHeading = () => {
   const [copyIncludeSub, setCopyIncludeSub] = useState(true);
   const [copyBudgetType, setCopyBudgetType] = useState('ALL');
   const [copying, setCopying] = useState(false);
+  const [staticBudgetTypes, setStaticBudgetTypes] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
-        const list = await getFiscalYearsApi();
+        const [list, sTypes] = await Promise.all([
+          getFiscalYearsApi(),
+          getStaticDataApi('Budget'),
+        ]);
         if (!isMounted) return;
         setFiscalYears(list || []);
+        if (sTypes?.length) setStaticBudgetTypes(sTypes);
         if (list?.length > 0) {
           const first = list[0]?.Value || list[0]?.FiscalYear || list[0]?.Label || list[0];
           setSelectedFiscalYear((prev) => prev || first);
@@ -771,8 +777,14 @@ const BudgetHeading = () => {
                             onChange={setHeadingType}
                             style={{ width: '100%', height: 36 }}
                           >
-                            <Option value="Financial">Financial</Option>
-                            <Option value="Non-Financial">Non-Financial</Option>
+                            {(staticBudgetTypes.length ? staticBudgetTypes : [{ Label: 'Financial' }, { Label: 'Non-Financial' }]).map((bt) => {
+                              const val = bt.Label?.replace(/\s+Budget$/i, '');
+                              return (
+                                <Option key={bt.Value || bt.Label || val} value={val}>
+                                  {val}
+                                </Option>
+                              );
+                            })}
                           </Select>
                         </Col>
 
