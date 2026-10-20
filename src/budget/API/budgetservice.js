@@ -22,7 +22,7 @@ export const getStoredUserId = () => {
 export const getFiscalYearsApi = async () => {
   try {
     const res = await api.post('/list/getGenericList', { FilterType: 'FiscalYear' });
-    return (res.data?.data || []).map((f) => {
+    const list = (res.data?.data || []).map((f) => {
       const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
       return {
         Value: yearName,
@@ -31,6 +31,7 @@ export const getFiscalYearsApi = async () => {
         FiscalId: f.Value,
       };
     });
+    return list.sort((a, b) => b.FiscalYear.localeCompare(a.FiscalYear, undefined, { numeric: true, sensitivity: 'base' }));
   } catch {
     return [];
   }

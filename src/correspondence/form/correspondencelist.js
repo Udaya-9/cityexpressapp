@@ -164,7 +164,14 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
         }
         if (fyList?.length) {
           const fys = fyList.map((f) => (f.Label || f.FiscalYear || '').trim()).filter(Boolean);
-          if (fys.length) setFiscalYears(fys);
+          if (fys.length) {
+            setFiscalYears(fys);
+            setFiscalYear((prev) => prev || fys[0]);
+            setAppliedFilters((prev) => ({
+              ...prev,
+              fiscalYear: prev.fiscalYear || fys[0],
+            }));
+          }
         }
       } catch (e) {
         console.error('Dropdown fetch error:', e);
@@ -222,13 +229,14 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
   };
 
   const handleReset = () => {
-    setFiscalYear(undefined);
+    const defaultFy = fiscalYears[0] || undefined;
+    setFiscalYear(defaultFy);
     setDepartment(undefined);
     setUser(undefined);
     setFromDate('');
     setToDate('');
     setAppliedFilters({
-      fiscalYear: undefined,
+      fiscalYear: defaultFy,
       department: undefined,
       user: undefined,
       fromDate: '',

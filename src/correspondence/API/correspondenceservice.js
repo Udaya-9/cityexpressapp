@@ -135,7 +135,7 @@ export const getFiscalYearsApi = async () => {
     const res = await api.post('/list/getGenericList', { FilterType: 'FiscalYear' });
     const list = res.data?.data || [];
     if (Array.isArray(list) && list.length > 0) {
-      return list.map((f) => {
+      const mapped = list.map((f) => {
         const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
         return {
           Value: yearName,
@@ -144,6 +144,7 @@ export const getFiscalYearsApi = async () => {
           FiscalId: f.Value,
         };
       });
+      return mapped.sort((a, b) => b.FiscalYear.localeCompare(a.FiscalYear, undefined, { numeric: true, sensitivity: 'base' }));
     }
   } catch (err) {
     console.error('Failed to load fiscal years from API:', err);
