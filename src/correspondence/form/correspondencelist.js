@@ -184,34 +184,20 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
 
   const availableUsers = useMemo(() => {
     if (!department) {
-      const names = rawUserList.map((u) => (u.Label || u.FullName || u.Value || '').trim()).filter(Boolean);
-      return Array.from(new Set(names));
+      return [];
     }
     const deptObj = rawDeptList.find(
       (d) => (d.Label || d.DepartmentName || '').trim().toLowerCase() === department.trim().toLowerCase()
     );
     const deptId = deptObj?.Value || deptObj?.DepartmentId;
-    const list = deptId ? rawUserList.filter((u) => u.DepartmentId === deptId) : rawUserList;
+    const list = deptId ? rawUserList.filter((u) => u.DepartmentId === deptId) : [];
     const names = list.map((u) => (u.Label || u.FullName || u.Value || '').trim()).filter(Boolean);
     return Array.from(new Set(names));
   }, [department, rawDeptList, rawUserList]);
 
   const handleDepartmentChange = (val) => {
     setDepartment(val);
-    if (val && user) {
-      const deptObj = rawDeptList.find(
-        (d) => (d.Label || d.DepartmentName || '').trim().toLowerCase() === val.trim().toLowerCase()
-      );
-      const deptId = deptObj?.Value || deptObj?.DepartmentId;
-      if (deptId) {
-        const belongs = rawUserList.some(
-          (u) =>
-            u.DepartmentId === deptId &&
-            (u.Label || u.FullName || u.Value || '').trim().toLowerCase() === user.trim().toLowerCase()
-        );
-        if (!belongs) setUser(undefined);
-      }
-    }
+    setUser(undefined);
   };
 
   useEffect(() => {
@@ -689,7 +675,8 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                 <Select
                   value={user}
                   onChange={setUser}
-                  placeholder="--Select User--"
+                  placeholder={!department ? '-- Select Department First --' : '-- Select User --'}
+                  disabled={!department}
                   allowClear
                   style={{ width: '100%', height: 36 }}
                   showSearch
