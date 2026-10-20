@@ -13,7 +13,12 @@ export const getReportFiltersApi = async (reportConfigId) => {
 export const getGenericOptionsApi = async (filterType) => {
   if (!filterType) return [];
   try {
-    const res = await api.post('/list/getGenericList', { FilterType: filterType });
+    let payload = { FilterType: filterType };
+    if (typeof filterType === 'string' && filterType.includes(':')) {
+      const [fType, mod] = filterType.split(':');
+      payload = { FilterType: fType, module: mod };
+    }
+    const res = await api.post('/list/getGenericList', payload);
     return res.data?.data || [];
   } catch (err) {
     console.error(`Failed to fetch options for ${filterType}:`, err);

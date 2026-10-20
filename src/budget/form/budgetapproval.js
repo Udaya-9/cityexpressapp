@@ -47,12 +47,23 @@ const formatCurrency = (amount) => {
   })}`;
 };
 
+const isFinalizedStatus = (status) => {
+  const s = String(status || '').trim().toLowerCase();
+  return s === 'approved' || s === 'approve' || s === 'rejected' || s === 'reject';
+};
+
+const isApprovedStatus = (status) => {
+  const s = String(status || '').trim().toLowerCase();
+  return s === 'approved' || s === 'approve';
+};
+
 const BudgetApproval = () => {
   const [fiscalYears, setFiscalYears] = useState([]);
   const [departments, setDepartments] = useState([]);
 
   const [fiscalYear, setFiscalYear] = useState(undefined);
   const [department, setDepartment] = useState(undefined);
+  const [requestTypeFilter, setRequestTypeFilter] = useState('ALL');
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -97,16 +108,24 @@ const BudgetApproval = () => {
       const data = await getBudgetRequestsApi({
         fiscalYear,
         departmentId: department || null,
+        requestType: requestTypeFilter !== 'ALL' ? requestTypeFilter : undefined,
       });
-      const list = Array.isArray(data) ? data : [];
+      let list = Array.isArray(data) ? data : [];
+      if (requestTypeFilter !== 'ALL') {
+        const isD = requestTypeFilter.toLowerCase().includes('demand');
+        list = list.filter((r) => {
+          const itemD = String(r.requestType || '').toLowerCase().includes('demand');
+          return isD ? itemD : !itemD;
+        });
+      }
       setRequests(list);
 
       const statuses = {};
       const amounts = {};
       list.forEach((item) => {
         const key = item.id || item.code;
-        statuses[key] = item.status === 'Rejected' ? 'Reject' : 'Approve';
-        const isApprovedWithAmount = item.status === 'Approved' && Number(item.approvedAmount) > 0;
+        statuses[key] = String(item.status || '').toLowerCase().startsWith('reject') ? 'Reject' : 'Approve';
+        const isApprovedWithAmount = isApprovedStatus(item.status) && Number(item.approvedAmount) > 0;
         amounts[key] = isApprovedWithAmount ? Number(item.approvedAmount) : Number(item.requestedAmount || 0);
       });
       setApprovalStatuses(statuses);
@@ -116,7 +135,7 @@ const BudgetApproval = () => {
     } finally {
       setLoading(false);
     }
-  }, [fiscalYear, department]);
+  }, [fiscalYear, department, requestTypeFilter]);
 
   useEffect(() => {
     loadRequests();
@@ -165,7 +184,7 @@ const BudgetApproval = () => {
   }, [requests]);
 
   const pendingRequests = useMemo(() => {
-    return requests.filter((r) => r.status === 'Pending' || !r.status);
+    return requests.filter((r) => !isFinalizedStatus(r.status));
   }, [requests]);
 
   const groupSubtotals = useMemo(() => {
@@ -174,9 +193,9 @@ const BudgetApproval = () => {
       let subTotal = 0;
       group.items.forEach((item) => {
         const key = item.id || item.code;
-        if (item.status === 'Approved') {
+        if (isApprovedStatus(item.status)) {
           subTotal += Number(item.approvedAmount || 0);
-        } else if (item.status !== 'Rejected') {
+        } else if (!isFinalizedStatus(item.status)) {
           const chosen = approvalStatuses[key] || 'Approve';
           if (chosen === 'Approve') {
             subTotal += Number(
@@ -192,7 +211,7 @@ const BudgetApproval = () => {
 
   const handleApproveAll = async () => {
     if (pendingRequests.length === 0) {
-      message.info('All budget requests have already been finalized');
+      message.info('All annual budget requests have already been finalized and cannot be approved again.');
       return;
     }
 
@@ -378,6 +397,30 @@ const BudgetApproval = () => {
               })}
             </Select>
           </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#3b556e',
+                marginBottom: 6,
+                letterSpacing: '0.4px',
+                textTransform: 'uppercase',
+              }}
+            >
+              REQUEST TYPE
+            </div>
+            <Select
+              value={requestTypeFilter}
+              onChange={setRequestTypeFilter}
+              style={{ width: '100%', height: 38 }}
+            >
+              <Option value="ALL">All Types</Option>
+              <Option value="Annual Budget">Annual Budget</Option>
+              <Option value="onDemand Budget">On-Demand Budget</Option>
+            </Select>
+          </Col>
         </Row>
       </div>
 
@@ -497,7 +540,8 @@ const BudgetApproval = () => {
                     {group.items.map((item) => {
                       const key = item.id || item.code;
                       const statusVal = approvalStatuses[key] || 'Approve';
-                      const isFinalized = item.status === 'Approved' || item.status === 'Rejected';
+                      const isFinalized = isFinalizedStatus(item.status);
+                      const isApproved = isApprovedStatus(item.status);
 
                       return (
                         <tr key={key} style={{ borderBottom: `1px solid #f1f5f9` }}>
@@ -507,15 +551,33 @@ const BudgetApproval = () => {
                             </span>
                           </td>
                           <td style={{ padding: '12px 18px', fontWeight: 600, color: C.text, fontSize: 13 }}>
-                            {item.subHeading || item.subHeadingTitle}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span>{item.subHeading || item.subHeadingTitle}</span>
+                              <Tag
+                                color={String(item.requestType || '').toLowerCase().includes('demand') ? 'geekblue' : 'blue'}
+                                style={{ fontSize: 10, lineHeight: '18px', margin: 0, fontWeight: 600 }}
+                              >
+                                {String(item.requestType || '').toLowerCase().includes('demand') ? 'On-Demand' : 'Annual'}
+                              </Tag>
+                              {item.submittedDate && (
+                                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 400 }}>
+                                  ({item.submittedDate})
+                                </span>
+                              )}
+                            </div>
+                            {item.remarks && (
+                              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 400, marginTop: 2 }}>
+                                Remarks: {item.remarks}
+                              </div>
+                            )}
                           </td>
                           <td style={{ padding: '12px 18px', textAlign: 'center' }}>
                             {isFinalized ? (
                               <Tag
-                                color={item.status === 'Approved' ? 'success' : 'error'}
+                                color={isApproved ? 'success' : 'error'}
                                 style={{ fontWeight: 700, padding: '4px 12px', fontSize: 12, borderRadius: 4 }}
                               >
-                                {item.status.toUpperCase()}
+                                {isApproved ? 'APPROVED' : 'REJECTED'}
                               </Tag>
                             ) : (
                               <Radio.Group
@@ -560,7 +622,7 @@ const BudgetApproval = () => {
                           </td>
                           <td style={{ padding: '12px 18px', textAlign: 'right' }}>
                             {isFinalized ? (
-                              item.status === 'Approved' ? (
+                              isApproved ? (
                                 <span style={{ fontWeight: 700, color: '#15803d', fontSize: 14 }}>
                                   {formatCurrency(item.approvedAmount)}
                                 </span>
@@ -632,8 +694,8 @@ const BudgetApproval = () => {
             </Button>
             <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>
               {pendingRequests.length === 0
-                ? 'All requests have been approved or rejected. Finalized records cannot be modified.'
-                : 'Review all amounts carefully before submitting'}
+                ? 'All requests have been finalized. Finalized records cannot be modified.'
+                : 'Review all amounts carefully before submitting.'}
             </div>
           </div>
         </div>

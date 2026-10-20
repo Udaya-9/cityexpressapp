@@ -61,4 +61,17 @@ api.interceptors.response.use(
     }
 );
 
+export const getStaticDataApi = async (module) => {
+    try {
+        const res = await api.post("/list/getGenericList", {
+            FilterType: "StaticData",
+            module: module || null,
+        });
+        return res.data?.data || [];
+    } catch (err) {
+        console.error(`Failed to fetch static data for ${module}:`, err);
+        return [];
+    }
+};
+
 export default api;

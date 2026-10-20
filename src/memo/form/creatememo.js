@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Card,
@@ -23,6 +23,7 @@ import {
     InboxOutlined,
 } from "@ant-design/icons";
 import { createMemoApi } from "../API/memoservice";
+import { getStaticDataApi } from "../../API/api";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -34,6 +35,14 @@ const CreateMemo = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [fileList, setFileList] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        (async () => {
+            const list = await getStaticDataApi("Memo");
+            if (list?.length) setCategories(list);
+        })();
+    }, []);
 
     let currentUser = {};
     try {
@@ -151,12 +160,20 @@ const CreateMemo = () => {
                             rules={[{ required: true, message: "Please select category" }]}
                         >
                             <Select placeholder="Select category">
-                                <Option value="Requisition & Procurement">Requisition & Procurement</Option>
-                                <Option value="Expense Approval">Expense Approval</Option>
-                                <Option value="IT & Infrastructure">IT & Infrastructure</Option>
-                                <Option value="Administrative Request">Administrative Request</Option>
-                                <Option value="HR & Personnel">HR & Personnel</Option>
-                                <Option value="General Notice">General Notice</Option>
+                                {(categories.length ? categories.map((c) => c.Label) : [
+                                    "Purchase Memo",
+                                    "Payment Memo",
+                                    "Requisition & Procurement",
+                                    "Expense Approval",
+                                    "IT & Infrastructure",
+                                    "Administrative Request",
+                                    "HR & Personnel",
+                                    "General Notice",
+                                ]).map((cat) => (
+                                    <Option key={cat} value={cat}>
+                                        {cat}
+                                    </Option>
+                                ))}
                             </Select>
                         </Form.Item>
                     </Col>

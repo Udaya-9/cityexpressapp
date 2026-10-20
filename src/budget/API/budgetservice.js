@@ -51,6 +51,15 @@ export const getDepartmentsApi = async () => {
   }
 };
 
+export const getStaticDataApi = async (module) => {
+  try {
+    const res = await api.post('/list/getGenericList', { FilterType: 'StaticData', module: module || null });
+    return res.data?.data || [];
+  } catch {
+    return [];
+  }
+};
+
 export const getBudgetHeadingsApi = async (fiscalYear) => {
   const payload = {
     sys_user_id: getStoredUserId(),
@@ -234,6 +243,7 @@ export const getBudgetRequestsApi = async (filters = {}) => {
   const params = new URLSearchParams();
   if (filters.fiscalYear) params.append('fiscalYear', filters.fiscalYear);
   if (filters.departmentId) params.append('departmentId', filters.departmentId);
+  if (filters.requestType) params.append('requestType', filters.requestType);
   const query = params.toString() ? `?${params.toString()}` : '';
   try {
     const res = await api.get(`/budget/request/list${query}`);
