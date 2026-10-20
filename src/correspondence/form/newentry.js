@@ -147,6 +147,11 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
 
   // When department changes, filter users belonging to that department and clear previous user selection
   const handleDepartmentChange = (deptVal) => {
+    if (!deptVal) {
+      setSelectedDepartmentId(null);
+      form.setFieldsValue({ assignToUser: undefined });
+      return;
+    }
     // deptVal can be either DepartmentId GUID or department label
     const matchedDept = departments.find(
       (d) => d.value === deptVal || d.label === deptVal
@@ -158,7 +163,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
 
   // Filter users by selected DepartmentId
   const displayedUsers = useMemo(() => {
-    if (!selectedDepartmentId) return users;
+    if (!selectedDepartmentId) return [];
     const match = users.filter((u) => {
       if (!u.departmentId) return false;
       return String(u.departmentId).toLowerCase() === String(selectedDepartmentId).toLowerCase();
@@ -652,6 +657,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                     placeholder="--Select Department--"
                     style={{ height: 42, width: '100%' }}
                     showSearch
+                    allowClear
                     optionFilterProp="children"
                     onChange={handleDepartmentChange}
                   >
@@ -670,11 +676,11 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                   label={<span style={labelStyle}>ASSIGN TO USER *</span>}
                   rules={[{ required: true, message: 'Please select user' }]}
                   extra={
-                    selectedDepartmentId && (
+                    selectedDepartmentId ? (
                       <span style={{ fontSize: 12, color: '#64748b' }}>
                         Showing {displayedUsers.length} personnel from selected department
                       </span>
-                    )
+                    ) : null
                   }
                 >
                   <Select
@@ -685,8 +691,10 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
                         ? 'No personnel in this department'
                         : '-- Select User --'
                     }
+                    disabled={!selectedDepartmentId}
                     style={{ height: 42, width: '100%' }}
                     showSearch
+                    allowClear
                     optionFilterProp="children"
                     notFoundContent={
                       selectedDepartmentId
