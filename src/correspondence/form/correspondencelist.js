@@ -36,6 +36,7 @@ import {
 } from '../API/correspondenceservice';
 import NepaliDate from 'nepali-date-converter';
 import NepaliDatePicker, { bsToAdString } from '../components/NepaliDatePicker';
+import { findStoredDepartment } from '../../API/api';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -162,16 +163,22 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
           const names = deptList.map((d) => (d.Label || d.DepartmentName || '').trim()).filter(Boolean);
           if (names.length) setDepartments(names);
         }
-        if (fyList?.length) {
-          const fys = fyList.map((f) => (f.Label || f.FiscalYear || '').trim()).filter(Boolean);
-          if (fys.length) {
-            setFiscalYears(fys);
-            setFiscalYear((prev) => prev || fys[0]);
-            setAppliedFilters((prev) => ({
-              ...prev,
-              fiscalYear: prev.fiscalYear || fys[0],
-            }));
-          }
+
+        const defaultDept = findStoredDepartment(deptList);
+        const defaultDeptName = (defaultDept?.Label || defaultDept?.DepartmentName || '').trim() || undefined;
+        if (defaultDeptName) setDepartment(defaultDeptName);
+
+        const fys = (fyList || []).map((f) => (f.Label || f.FiscalYear || '').trim()).filter(Boolean);
+        if (fys.length) {
+          setFiscalYears(fys);
+          setFiscalYear((prev) => prev || fys[0]);
+        }
+        if (fys.length || defaultDeptName) {
+          setAppliedFilters((prev) => ({
+            ...prev,
+            fiscalYear: prev.fiscalYear || fys[0],
+            department: prev.department || defaultDeptName,
+          }));
         }
       } catch (e) {
         console.error('Dropdown fetch error:', e);
@@ -216,14 +223,16 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
 
   const handleReset = () => {
     const defaultFy = fiscalYears[0] || undefined;
+    const defaultDept = findStoredDepartment(rawDeptList);
+    const defaultDeptName = (defaultDept?.Label || defaultDept?.DepartmentName || '').trim() || undefined;
     setFiscalYear(defaultFy);
-    setDepartment(undefined);
+    setDepartment(defaultDeptName);
     setUser(undefined);
     setFromDate('');
     setToDate('');
     setAppliedFilters({
       fiscalYear: defaultFy,
-      department: undefined,
+      department: defaultDeptName,
       user: undefined,
       fromDate: '',
       toDate: '',

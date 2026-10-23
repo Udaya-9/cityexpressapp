@@ -74,6 +74,26 @@ export const getStaticDataApi = async (module) => {
     }
 };
 
+export const getStoredDepartmentId = () => {
+    try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return user.departmentId || user.DepartmentId || user.departmentid || null;
+    } catch {
+        return null;
+    }
+};
+
+export const findStoredDepartment = (departments = []) => {
+    const storedId = getStoredDepartmentId();
+    if (!storedId) return null;
+    const target = String(storedId).toLowerCase();
+    return (
+        departments.find(
+            (d) => String(d?.Value || d?.DepartmentId || "").toLowerCase() === target
+        ) || null
+    );
+};
+
 export const getFiscalYearsApi = async () => {
     try {
         const res = await api.post("/list/getGenericList", { FilterType: "FiscalYear" });

@@ -27,6 +27,7 @@ import {
   getBudgetRequestsApi,
   bulkUpdateBudgetApprovalStatusApi,
 } from '../API/budgetservice';
+import { findStoredDepartment } from '../../API/api';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -92,6 +93,9 @@ const BudgetApproval = () => {
           const firstFy = fyList[0]?.Value || fyList[0]?.FiscalYear || fyList[0]?.Label || fyList[0];
           setFiscalYear(firstFy);
         }
+
+        const defaultDept = findStoredDepartment(deptList);
+        if (defaultDept) setDepartment(defaultDept.Value || defaultDept.DepartmentId);
       } catch (err) {
         console.error(err);
       }

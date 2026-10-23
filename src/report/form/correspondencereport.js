@@ -12,6 +12,7 @@ import {
 import { executeReportApi } from '../API/reportservice';
 import { getDepartmentsApi, getVendorsApi } from '../../correspondence/API/correspondenceservice';
 import NepaliDatePicker, { bsToAdString } from '../../correspondence/components/NepaliDatePicker';
+import { findStoredDepartment } from '../../API/api';
 
 const { Option } = Select;
 
@@ -144,6 +145,9 @@ const CorrespondenceReport = () => {
       if (!isMounted) return;
       setDepartments(deptList || []);
       setVendors(vendorList || []);
+
+      const defaultDept = findStoredDepartment(deptList);
+      if (defaultDept) setDepartment(defaultDept.Value || defaultDept.DepartmentId);
     })();
     return () => {
       isMounted = false;
@@ -191,9 +195,10 @@ const CorrespondenceReport = () => {
   }, [startDate, endDate, department, vendor]);
 
   const handleReset = () => {
+    const defaultDept = findStoredDepartment(departments);
     setStartDate(null);
     setEndDate(null);
-    setDepartment(undefined);
+    setDepartment(defaultDept?.Value || defaultDept?.DepartmentId);
     setVendor(undefined);
     setRows([]);
     setExecuted(false);

@@ -8,6 +8,7 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import { getFiscalYearsApi, getDepartmentsApi, getBudgetRequestsApi } from '../../budget/API/budgetservice';
+import { findStoredDepartment } from '../../API/api';
 
 const { Option } = Select;
 
@@ -222,6 +223,9 @@ const BudgetReport = () => {
       if (fyList?.length) {
         setFiscalYear(fyList[0]?.Value || fyList[0]?.FiscalYear || fyList[0]?.Label);
       }
+
+      const defaultDept = findStoredDepartment(deptList);
+      if (defaultDept) setDepartment(defaultDept.Value || defaultDept.DepartmentId);
     })();
     return () => {
       isMounted = false;

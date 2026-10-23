@@ -35,6 +35,7 @@ import {
   submitBudgetRequestApi,
   getStaticDataApi,
 } from '../API/budgetservice';
+import { findStoredDepartment } from '../../API/api';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -113,11 +114,17 @@ const BudgetManagement = () => {
         setDepartments(deptList || []);
         setReportTypes(reportTypeList || []);
 
+        const defaultDept = findStoredDepartment(deptList);
+        const defaultDeptId = defaultDept?.Value || defaultDept?.DepartmentId || undefined;
+        if (defaultDeptId) setDepartmentFilter(defaultDeptId);
+
         if (fyList?.length) {
           const firstFy = fyList[0]?.Value || fyList[0]?.FiscalYear || fyList[0]?.Label || fyList[0];
           setFiscalYearFilter(firstFy);
           setCreateFiscalYear(firstFy);
-          setAppliedFilters((prev) => ({ ...prev, fiscalYear: firstFy }));
+          setAppliedFilters((prev) => ({ ...prev, fiscalYear: firstFy, department: defaultDeptId ?? prev.department }));
+        } else if (defaultDeptId) {
+          setAppliedFilters((prev) => ({ ...prev, department: defaultDeptId }));
         }
       } catch (err) {
         console.error(err);
@@ -213,14 +220,16 @@ const BudgetManagement = () => {
 
   const handleResetFilter = () => {
     setReportTypeFilter(undefined);
-    setDepartmentFilter(undefined);
+    const defaultDept = findStoredDepartment(departments);
+    const defaultDeptId = defaultDept?.Value || defaultDept?.DepartmentId || undefined;
+    setDepartmentFilter(defaultDeptId);
     setHeadingFilter(undefined);
     setSubHeadingFilter(undefined);
     const defaultFy = fiscalYears[0]?.Value || fiscalYears[0]?.FiscalYear || fiscalYears[0]?.Label;
     setFiscalYearFilter(defaultFy);
     setAppliedFilters({
       reportType: undefined,
-      department: undefined,
+      department: defaultDeptId,
       fiscalYear: defaultFy,
       heading: undefined,
       subHeading: undefined,
