@@ -22,7 +22,7 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 
-import api from '../../API/api';
+import api, { getFiscalYearsApi } from '../../API/api';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -63,7 +63,7 @@ const decodeJwt = (token) => {
 };
 
 /* ---------- menu structure builder ---------- */
-const buildSidebarMenu = ({ showVendor, dynamicReports = [] }) => [
+const buildSidebarMenu = ({ showVendor }) => [
   {
     type: 'group',
     label: 'Overview',
@@ -142,17 +142,12 @@ const buildSidebarMenu = ({ showVendor, dynamicReports = [] }) => [
         ],
       },
       {
-        key: 'report',
+        key: 'reports',
         icon: <BarChartOutlined />,
-        label: 'Report',
+        label: 'Reports',
         children: [
-          { key: 'report-wizard', label: 'Report Wizard' },
-          ...(dynamicReports && dynamicReports.length > 0
-            ? dynamicReports.map((r) => ({
-                key: `report-item-${r.ReportConfigId}`,
-                label: r.ReportName,
-              }))
-            : []),
+          { key: 'budget-report', label: 'Budget Report' },
+          { key: 'correspondence-report', label: 'Correspondence Report' },
         ],
       },
     ],
@@ -191,19 +186,8 @@ const ROUTES = {
   'budget-approve': '/budget/approve',
   'budget-amendment': '/budget/amendment',
   'budget-transaction': '/budget/transaction',
-  'report-wizard': '/report',
-  'daily-stock': '/report/daily-stock',
-  'outward-item': '/report/outward-item',
-  'outward-department': '/report/outward-department',
-  'purchase-vendor': '/report/purchase-vendor',
-  'purchase-product': '/report/purchase-product',
-  'stock-value': '/report/stock-value',
-  'stock-ledger': '/report/stock-ledger',
-  'execute-depreciation': '/report/execute-depreciation',
-  'depreciation-report': '/report/depreciation',
-  'redispatch-report': '/report/redispatch',
-  'transaction-report-main': '/report/transaction',
-  'stakeholder-report': '/report/stakeholder',
+  'budget-report': '/budget/report',
+  'correspondence-report': '/correspondence/report',
   'list-requisition': '/requisition/list',
   'verify-requisition': '/requisition/verify',
   'dispatch-requisition': '/requisition/dispatch',
@@ -225,7 +209,7 @@ const userMenuItems = [
 
 const Dashboard = ({ children }) => {
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [openKeys, setOpenKeys] = useState([]);
@@ -234,7 +218,6 @@ const Dashboard = ({ children }) => {
   const [fullName, setFullName] = useState(FALLBACK_USER);
   const [showVendor, setShowVendor] = useState(false);
   const [fiscalYear, setFiscalYear] = useState(FALLBACK_FY);
-  const [dynamicReports, setDynamicReports] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -260,15 +243,8 @@ const Dashboard = ({ children }) => {
 
       if (alive && payload.fullname) setFullName(payload.fullname);
 
-      // Fetch dynamic reports from ReportConfig
-      try {
-        const { data: repRes } = await api.post('/report/list', {});
-        if (alive && repRes?.success && Array.isArray(repRes.data)) {
-          setDynamicReports(repRes.data);
-        }
-      } catch (e) {
-        // quiet fallback
-      }
+      const fyList = await getFiscalYearsApi();
+      if (alive && fyList.length) setFiscalYear(fyList[0].FiscalYear);
 
       const sysUserId = payload.id;
       if (!sysUserId) return;
@@ -294,10 +270,6 @@ const Dashboard = ({ children }) => {
         if (d.FullName) setFullName(d.FullName);
         setShowVendor(Number(d.vendor_menu) === 1);
 
-        if (d.FiscalYear) {
-          setFiscalYear(d.FiscalYear || FALLBACK_FY);
-          localStorage.setItem('fiscalYear', d.FiscalYear);
-        }
       } catch (err) {
         // handled globally
       }
@@ -310,8 +282,8 @@ const Dashboard = ({ children }) => {
   }, [navigate]);
 
   const sidebarMenuItems = useMemo(
-    () => buildSidebarMenu({ showVendor, dynamicReports }),
-    [showVendor, dynamicReports]
+    () => buildSidebarMenu({ showVendor }),
+    [showVendor]
   );
 
   const { PARENT_OF, LABEL_OF } = useMemo(() => {
@@ -332,13 +304,6 @@ const Dashboard = ({ children }) => {
   const isExpanded = !collapsed || isHovered;
 
   const selectedKey = useMemo(() => {
-    if (pathname.startsWith('/report')) {
-      const searchParams = new URLSearchParams(search);
-      const queryId = searchParams.get('id');
-      if (queryId) return `report-item-${queryId}`;
-      return 'report-wizard';
-    }
-
     let best = 'dashboard';
     let bestLen = -1;
     Object.entries(ROUTES).forEach(([key, path]) => {
@@ -349,7 +314,7 @@ const Dashboard = ({ children }) => {
       }
     });
     return best;
-  }, [pathname, search]);
+  }, [pathname]);
 
   useEffect(() => {
     const parent = PARENT_OF[selectedKey];
@@ -357,11 +322,6 @@ const Dashboard = ({ children }) => {
   }, [selectedKey, PARENT_OF]);
 
   const handleSidebarClick = ({ key }) => {
-    if (key.startsWith('report-item-')) {
-      const configId = key.replace('report-item-', '');
-      navigate(`/report?id=${configId}`);
-      return;
-    }
     if (ROUTES[key]) navigate(ROUTES[key]);
   };
 

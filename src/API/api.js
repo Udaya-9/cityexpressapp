@@ -74,4 +74,18 @@ export const getStaticDataApi = async (module) => {
     }
 };
 
+export const getFiscalYearsApi = async () => {
+    try {
+        const res = await api.post("/list/getGenericList", { FilterType: "FiscalYear" });
+        return (res.data?.data || [])
+            .map((f) => {
+                const year = (f.Label || f.FiscalYear || f.Value || "").toString().trim();
+                return { Value: year, Label: year, FiscalYear: year, FiscalId: f.Value };
+            })
+            .sort((a, b) => b.FiscalYear.localeCompare(a.FiscalYear, undefined, { numeric: true, sensitivity: "base" }));
+    } catch {
+        return [];
+    }
+};
+
 export default api;

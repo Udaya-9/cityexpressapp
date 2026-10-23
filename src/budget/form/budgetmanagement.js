@@ -287,10 +287,10 @@ const BudgetManagement = () => {
         const headTitle = (head.heading || head.title || '').trim();
         const headId = head.BudgetHeadId || head.id;
         const items = createSubheadings.filter((s) => {
+          // Match by identity only: heading titles are not unique.
           const matchesHead =
             (headId && s.BudgetHeadId && s.BudgetHeadId === headId) ||
-            (headCode && (s.headingCode || '').trim() === headCode) ||
-            (headTitle && (s.headingTitle || '').trim().toLowerCase() === headTitle.toLowerCase());
+            (headCode && (s.headingCode || '').trim() === headCode);
           if (!matchesHead) return false;
 
           const sType = String(s.requestType || '').toLowerCase();

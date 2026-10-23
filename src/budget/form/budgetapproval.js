@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
+  Alert,
   Button,
   Select,
   Row,
@@ -12,6 +13,7 @@ import {
   Spin,
   Tag,
 } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import {
   AuditOutlined,
   CalendarOutlined,
@@ -58,6 +60,7 @@ const isApprovedStatus = (status) => {
 };
 
 const BudgetApproval = () => {
+  const navigate = useNavigate();
   const [fiscalYears, setFiscalYears] = useState([]);
   const [departments, setDepartments] = useState([]);
 
@@ -67,6 +70,7 @@ const BudgetApproval = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showReportReminder, setShowReportReminder] = useState(false);
 
   // Editable approval states
   const [approvalStatuses, setApprovalStatuses] = useState({});
@@ -109,6 +113,7 @@ const BudgetApproval = () => {
         departmentId: department || null,
       });
       let list = Array.isArray(data) ? data : [];
+      list = list.filter((item) => !isFinalizedStatus(item.status));
       setRequests(list);
 
       const statuses = {};
@@ -116,8 +121,7 @@ const BudgetApproval = () => {
       list.forEach((item) => {
         const key = item.id || item.code;
         statuses[key] = String(item.status || '').toLowerCase().startsWith('reject') ? 'Reject' : 'Approve';
-        const isApprovedWithAmount = isApprovedStatus(item.status) && Number(item.approvedAmount) > 0;
-        amounts[key] = isApprovedWithAmount ? Number(item.approvedAmount) : Number(item.requestedAmount || 0);
+        amounts[key] = null;
       });
       setApprovalStatuses(statuses);
       setApprovedAmounts(amounts);
@@ -132,20 +136,20 @@ const BudgetApproval = () => {
     loadRequests();
   }, [loadRequests]);
 
-  const handleStatusChange = (key, val, requestedAmt = 0) => {
+  const handleStatusChange = (key, val) => {
     setApprovalStatuses((prev) => ({
       ...prev,
       [key]: val,
     }));
-    if (val === 'Approve') {
-      setApprovedAmounts((prev) => ({
-        ...prev,
-        [key]: prev[key] && Number(prev[key]) > 0 ? prev[key] : (requestedAmt || 0),
-      }));
-    } else if (val === 'Reject') {
+    if (val === 'Reject') {
       setApprovedAmounts((prev) => ({
         ...prev,
         [key]: 0,
+      }));
+    } else {
+      setApprovedAmounts((prev) => ({
+        ...prev,
+        [key]: Number(prev[key]) > 0 ? prev[key] : null,
       }));
     }
   };
@@ -153,7 +157,7 @@ const BudgetApproval = () => {
   const handleAmountChange = (key, val) => {
     setApprovedAmounts((prev) => ({
       ...prev,
-      [key]: val || 0,
+      [key]: val ?? null,
     }));
   };
 
@@ -189,9 +193,8 @@ const BudgetApproval = () => {
         } else if (!isFinalizedStatus(item.status)) {
           const chosen = approvalStatuses[key] || 'Approve';
           if (chosen === 'Approve') {
-            subTotal += Number(
-              approvedAmounts[key] !== undefined ? approvedAmounts[key] : (item.requestedAmount || 0)
-            );
+            const entered = Number(approvedAmounts[key]);
+            subTotal += entered > 0 ? entered : Number(item.requestedAmount || 0);
           }
         }
       });
@@ -222,6 +225,7 @@ const BudgetApproval = () => {
 
       await bulkUpdateBudgetApprovalStatusApi(updates);
       message.success('Budget approvals updated successfully!');
+      setShowReportReminder(true);
       loadRequests();
     } catch (err) {
       const errMsg = err?.response?.data?.message || err?.message || 'Failed to save budget approvals';
@@ -243,15 +247,18 @@ const BudgetApproval = () => {
 
     requests.forEach((r) => {
       const key = r.id || r.code;
+      const chosen = approvalStatuses[key] || 'Approve';
+      const entered = Number(approvedAmounts[key]);
+      const approvedAmount = chosen === 'Reject' ? 0 : entered > 0 ? entered : Number(r.requestedAmount || 0);
       rows.push([
         `"${r.fiscalYear || fiscalYear || ''}"`,
         `"${r.department || department || ''}"`,
         `"${r.heading || ''}"`,
         `"${r.subHeading || ''}"`,
         `"${r.code || ''}"`,
-        `"${approvalStatuses[key] || r.status || 'Approve'}"`,
+        `"${chosen}"`,
         `"${r.requestedAmount || 0}"`,
-        `"${approvedAmounts[key] !== undefined ? approvedAmounts[key] : r.approvedAmount || 0}"`,
+        `"${approvedAmount}"`,
       ]);
     });
 
@@ -312,6 +319,23 @@ const BudgetApproval = () => {
         </div>
       </div>
 
+      {showReportReminder && (
+        <Alert
+          type="success"
+          showIcon
+          closable
+          onClose={() => setShowReportReminder(false)}
+          message="Budget approvals submitted"
+          description="Export the updated budget from the report page."
+          action={
+            <Button type="primary" size="small" onClick={() => navigate('/budget/report')}>
+              Go to Report
+            </Button>
+          }
+          style={{ marginBottom: 20 }}
+        />
+      )}
+
       <div
         style={{
           background: '#ffffff',
@@ -339,7 +363,10 @@ const BudgetApproval = () => {
             </div>
             <Select
               value={fiscalYear}
-              onChange={setFiscalYear}
+              onChange={(val) => {
+                setFiscalYear(val);
+                setShowReportReminder(false);
+              }}
               placeholder="--Select Fiscal Year--"
               style={{ width: '100%', height: 38 }}
             >
@@ -371,7 +398,10 @@ const BudgetApproval = () => {
             </div>
             <Select
               value={department}
-              onChange={setDepartment}
+              onChange={(val) => {
+                setDepartment(val);
+                setShowReportReminder(false);
+              }}
               placeholder="--Select Department--"
               allowClear
               showSearch
@@ -438,7 +468,7 @@ const BudgetApproval = () => {
             textAlign: 'center',
           }}
         >
-          <Empty description="No budget requests found for the selected department and fiscal year." />
+          <Empty description="No pending budget requests found for the selected department and fiscal year." />
         </div>
       ) : (
         <div>
@@ -500,6 +530,9 @@ const BudgetApproval = () => {
                       </th>
                       <th style={{ padding: '10px 18px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: '#475569', width: 220 }}>
                         APPROVED AMOUNT
+                        <div style={{ fontSize: 10, fontWeight: 500, color: '#94a3b8', marginTop: 2 }}>
+                          Leave empty to approve the requested amount
+                        </div>
                       </th>
                     </tr>
                   </thead>
@@ -550,7 +583,7 @@ const BudgetApproval = () => {
                               <Radio.Group
                                 value={statusVal || 'Approve'}
                                 defaultValue="Approve"
-                                onChange={(e) => handleStatusChange(key, e.target.value, item.requestedAmount)}
+                                onChange={(e) => handleStatusChange(key, e.target.value)}
                               >
                                 <Radio
                                   value="Approve"
@@ -605,7 +638,7 @@ const BudgetApproval = () => {
                                   min={0}
                                   bordered={false}
                                   disabled={statusVal === 'Reject'}
-                                  value={approvedAmounts[key] !== undefined ? approvedAmounts[key] : (item.requestedAmount || 0)}
+                                  value={approvedAmounts[key] ?? null}
                                   onChange={(val) => handleAmountChange(key, val)}
                                   formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                                   parser={(val) => (val ? val.replace(/\$\s?|(,*)/g, '') : '')}
