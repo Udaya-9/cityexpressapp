@@ -207,6 +207,10 @@ const BudgetHeading = () => {
   };
 
   const handleEditHeading = (record) => {
+    if (Number(record?.isUsed) === 1) {
+      message.warning('Cannot edit: this heading is already used in budget requests');
+      return;
+    }
     setEditingHeadingId(record.id || record.BudgetHeadId || record.code);
     setHeadingFY(record.fiscalYear || selectedFiscalYear);
     setHeadingCode(record.code || '');
@@ -216,6 +220,10 @@ const BudgetHeading = () => {
   };
 
   const handleDeleteHeading = async (record) => {
+    if (Number(record?.isUsed) === 1) {
+      message.warning('Cannot delete: this heading is already used in budget requests');
+      return;
+    }
     try {
       const id = typeof record === 'object' ? (record.id || record.BudgetHeadId) : record;
       const fy = (typeof record === 'object' ? record.fiscalYear : null) || selectedFiscalYear;
@@ -291,6 +299,10 @@ const BudgetHeading = () => {
   };
 
   const handleEditSubheading = (record) => {
+    if (Number(record?.isUsed) === 1) {
+      message.warning('Cannot edit: this subheading is already used in budget requests');
+      return;
+    }
     setEditingSubId(record.id || record.BudgetSubHeadId || record.code);
     setSubFY(record.fiscalYear || selectedFiscalYear);
     setSubMainHeading(record.headingCode || record.headingTitle || record.heading);
@@ -301,6 +313,10 @@ const BudgetHeading = () => {
   };
 
   const handleDeleteSubheading = async (record) => {
+    if (Number(record?.isUsed) === 1) {
+      message.warning('Cannot delete: this subheading is already used in budget requests');
+      return;
+    }
     try {
       const id = typeof record === 'object' ? (record.id || record.BudgetSubHeadId) : record;
       const headId = typeof record === 'object' ? (record.BudgetHeadId || record.budgetHeadId) : null;
@@ -436,33 +452,62 @@ const BudgetHeading = () => {
       key: 'actions',
       width: 130,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEditHeading(record)}
-            style={{ background: '#1a73e8', borderColor: '#1a73e8', borderRadius: 4 }}
-          />
-          <Popconfirm
-            title="Delete Heading"
-            description="Are you sure you want to delete this heading?"
-            onConfirm={() => handleDeleteHeading(record)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              danger
-              type="primary"
-              size="small"
-              icon={<DeleteOutlined />}
-              style={{ borderRadius: 4 }}
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isLocked = Number(record.isUsed) === 1;
+        return (
+          <Space size="small">
+            <Tooltip title={isLocked ? 'Cannot edit: this heading is used in budget requests' : 'Edit Heading'}>
+              <Button
+                type="primary"
+                size="small"
+                disabled={isLocked}
+                icon={<EditOutlined />}
+                onClick={() => !isLocked && handleEditHeading(record)}
+                style={{
+                  background: isLocked ? '#cbd5e1' : '#1a73e8',
+                  borderColor: isLocked ? '#cbd5e1' : '#1a73e8',
+                  borderRadius: 4,
+                  cursor: isLocked ? 'not-allowed' : 'pointer',
+                }}
+              />
+            </Tooltip>
+            <Tooltip title={isLocked ? 'Cannot delete: this heading is used in budget requests' : 'Delete Heading'}>
+              {isLocked ? (
+                <Button
+                  danger
+                  type="primary"
+                  size="small"
+                  disabled
+                  icon={<DeleteOutlined />}
+                  style={{
+                    borderRadius: 4,
+                    background: '#cbd5e1',
+                    borderColor: '#cbd5e1',
+                    cursor: 'not-allowed',
+                  }}
+                />
+              ) : (
+                <Popconfirm
+                  title="Delete Heading"
+                  description="Are you sure you want to delete this heading?"
+                  onConfirm={() => handleDeleteHeading(record)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    danger
+                    type="primary"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    style={{ borderRadius: 4 }}
+                  />
+                </Popconfirm>
+              )}
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -543,33 +588,62 @@ const BudgetHeading = () => {
       key: 'actions',
       width: 130,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEditSubheading(record)}
-            style={{ background: '#1a73e8', borderColor: '#1a73e8', borderRadius: 4 }}
-          />
-          <Popconfirm
-            title="Delete Subheading"
-            description="Are you sure you want to delete this subheading?"
-            onConfirm={() => handleDeleteSubheading(record)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              danger
-              type="primary"
-              size="small"
-              icon={<DeleteOutlined />}
-              style={{ borderRadius: 4 }}
-            />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isLocked = Number(record.isUsed) === 1;
+        return (
+          <Space size="small">
+            <Tooltip title={isLocked ? 'Cannot edit: this subheading is used in budget requests' : 'Edit Subheading'}>
+              <Button
+                type="primary"
+                size="small"
+                disabled={isLocked}
+                icon={<EditOutlined />}
+                onClick={() => !isLocked && handleEditSubheading(record)}
+                style={{
+                  background: isLocked ? '#cbd5e1' : '#1a73e8',
+                  borderColor: isLocked ? '#cbd5e1' : '#1a73e8',
+                  borderRadius: 4,
+                  cursor: isLocked ? 'not-allowed' : 'pointer',
+                }}
+              />
+            </Tooltip>
+            <Tooltip title={isLocked ? 'Cannot delete: this subheading is used in budget requests' : 'Delete Subheading'}>
+              {isLocked ? (
+                <Button
+                  danger
+                  type="primary"
+                  size="small"
+                  disabled
+                  icon={<DeleteOutlined />}
+                  style={{
+                    borderRadius: 4,
+                    background: '#cbd5e1',
+                    borderColor: '#cbd5e1',
+                    cursor: 'not-allowed',
+                  }}
+                />
+              ) : (
+                <Popconfirm
+                  title="Delete Subheading"
+                  description="Are you sure you want to delete this subheading?"
+                  onConfirm={() => handleDeleteSubheading(record)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    danger
+                    type="primary"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    style={{ borderRadius: 4 }}
+                  />
+                </Popconfirm>
+              )}
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 

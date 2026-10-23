@@ -75,7 +75,6 @@ const BudgetManagement = () => {
   const [fiscalYearFilter, setFiscalYearFilter] = useState(undefined);
   const [headingFilter, setHeadingFilter] = useState(undefined);
   const [subHeadingFilter, setSubHeadingFilter] = useState(undefined);
-  const [requestTypeFilter, setRequestTypeFilter] = useState('ALL');
 
   const [appliedFilters, setAppliedFilters] = useState({
     reportType: undefined,
@@ -186,6 +185,21 @@ const BudgetManagement = () => {
     }
   }, [viewMode, appliedFilters, loadListData]);
 
+  const handleHeadingFilterChange = (val) => {
+    setHeadingFilter(val);
+    setSubHeadingFilter(undefined);
+  };
+
+  const filteredSubheadings = useMemo(() => {
+    if (!headingFilter) return [];
+    return subheadings.filter((s) => {
+      const matchCode = s.headingCode && String(s.headingCode).toLowerCase() === String(headingFilter).toLowerCase();
+      const matchHead = s.heading && String(s.heading || s.headingTitle).toLowerCase() === String(headingFilter).toLowerCase();
+      const matchId = s.BudgetHeadId && String(s.BudgetHeadId).toLowerCase() === String(headingFilter).toLowerCase();
+      return matchCode || matchHead || matchId;
+    });
+  }, [headingFilter, subheadings]);
+
   const handleApplyFilter = () => {
     setAppliedFilters({
       reportType: reportTypeFilter,
@@ -193,7 +207,7 @@ const BudgetManagement = () => {
       fiscalYear: fiscalYearFilter,
       heading: headingFilter,
       subHeading: subHeadingFilter,
-      requestType: requestTypeFilter,
+      requestType: 'ALL',
     });
   };
 
@@ -202,7 +216,6 @@ const BudgetManagement = () => {
     setDepartmentFilter(undefined);
     setHeadingFilter(undefined);
     setSubHeadingFilter(undefined);
-    setRequestTypeFilter('ALL');
     const defaultFy = fiscalYears[0]?.Value || fiscalYears[0]?.FiscalYear || fiscalYears[0]?.Label;
     setFiscalYearFilter(defaultFy);
     setAppliedFilters({
@@ -682,7 +695,7 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={4}>
+                <Col xs={24} sm={12} md={5}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ApartmentOutlined style={{ color: C.brand }} />
                     <span>Department</span>
@@ -707,7 +720,7 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={4}>
+                <Col xs={24} sm={12} md={5}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <CalendarOutlined style={{ color: C.brand }} />
                     <span>Fiscal Year</span>
@@ -730,14 +743,14 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={4}>
+                <Col xs={24} sm={12} md={5}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <UnorderedListOutlined style={{ color: C.brand }} />
                     <span>Heading</span>
                   </div>
                   <Select
                     value={headingFilter}
-                    onChange={setHeadingFilter}
+                    onChange={handleHeadingFilterChange}
                     placeholder="--Select Headings--"
                     allowClear
                     showSearch
@@ -755,7 +768,7 @@ const BudgetManagement = () => {
                   </Select>
                 </Col>
 
-                <Col xs={24} sm={12} md={4}>
+                <Col xs={24} sm={12} md={5}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <TagOutlined style={{ color: C.brand }} />
                     <span>Sub Heading</span>
@@ -763,12 +776,13 @@ const BudgetManagement = () => {
                   <Select
                     value={subHeadingFilter}
                     onChange={setSubHeadingFilter}
-                    placeholder="--Select SubHeading--"
+                    placeholder={!headingFilter ? '-- Select Heading First --' : '-- Select SubHeading --'}
+                    disabled={!headingFilter}
                     allowClear
                     showSearch
                     style={{ width: '100%', height: 38 }}
                   >
-                    {subheadings.map((s) => {
+                    {filteredSubheadings.map((s) => {
                       const val = s.code || s.subHeadingTitle;
                       const lbl = `${s.code ? s.code + ' - ' : ''}${s.subHeadingTitle || s.title}`;
                       return (
@@ -777,22 +791,6 @@ const BudgetManagement = () => {
                         </Option>
                       );
                     })}
-                  </Select>
-                </Col>
-
-                <Col xs={24} sm={12} md={4}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#3b556e', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <DollarCircleOutlined style={{ color: C.brand }} />
-                    <span>Request Type</span>
-                  </div>
-                  <Select
-                    value={requestTypeFilter}
-                    onChange={setRequestTypeFilter}
-                    style={{ width: '100%', height: 38 }}
-                  >
-                    <Option value="ALL">All Types</Option>
-                    <Option value="Annual Budget">Annual Budget</Option>
-                    <Option value="onDemand Budget">On-Demand Budget</Option>
                   </Select>
                 </Col>
               </Row>
