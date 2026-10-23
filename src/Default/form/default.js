@@ -22,7 +22,7 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 
-import api from '../../API/api';
+import api, { getFiscalYearsApi } from '../../API/api';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -260,6 +260,9 @@ const Dashboard = ({ children }) => {
 
       if (alive && payload.fullname) setFullName(payload.fullname);
 
+      const fyList = await getFiscalYearsApi();
+      if (alive && fyList.length) setFiscalYear(fyList[0].FiscalYear);
+
       // Fetch dynamic reports from ReportConfig
       try {
         const { data: repRes } = await api.post('/report/list', {});
@@ -294,10 +297,6 @@ const Dashboard = ({ children }) => {
         if (d.FullName) setFullName(d.FullName);
         setShowVendor(Number(d.vendor_menu) === 1);
 
-        if (d.FiscalYear) {
-          setFiscalYear(d.FiscalYear || FALLBACK_FY);
-          localStorage.setItem('fiscalYear', d.FiscalYear);
-        }
       } catch (err) {
         // handled globally
       }

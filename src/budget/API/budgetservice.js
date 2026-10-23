@@ -1,4 +1,6 @@
-import api from '../../API/api';
+import api, { getFiscalYearsApi } from '../../API/api';
+
+export { getFiscalYearsApi };
 
 export const getStoredUserId = () => {
   try {
@@ -17,24 +19,6 @@ export const getStoredUserId = () => {
     }
   } catch {}
   return null;
-};
-
-export const getFiscalYearsApi = async () => {
-  try {
-    const res = await api.post('/list/getGenericList', { FilterType: 'FiscalYear' });
-    const list = (res.data?.data || []).map((f) => {
-      const yearName = (f.Label || f.FiscalYear || f.Value || '').toString().trim();
-      return {
-        Value: yearName,
-        Label: yearName,
-        FiscalYear: yearName,
-        FiscalId: f.Value,
-      };
-    });
-    return list.sort((a, b) => b.FiscalYear.localeCompare(a.FiscalYear, undefined, { numeric: true, sensitivity: 'base' }));
-  } catch {
-    return [];
-  }
 };
 
 export const getDepartmentsApi = async () => {
