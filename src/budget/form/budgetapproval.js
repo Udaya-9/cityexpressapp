@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
+  Alert,
   Button,
   Select,
   Row,
@@ -12,6 +13,7 @@ import {
   Spin,
   Tag,
 } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import {
   AuditOutlined,
   CalendarOutlined,
@@ -58,6 +60,7 @@ const isApprovedStatus = (status) => {
 };
 
 const BudgetApproval = () => {
+  const navigate = useNavigate();
   const [fiscalYears, setFiscalYears] = useState([]);
   const [departments, setDepartments] = useState([]);
 
@@ -67,6 +70,7 @@ const BudgetApproval = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showReportReminder, setShowReportReminder] = useState(false);
 
   // Editable approval states
   const [approvalStatuses, setApprovalStatuses] = useState({});
@@ -221,6 +225,7 @@ const BudgetApproval = () => {
 
       await bulkUpdateBudgetApprovalStatusApi(updates);
       message.success('Budget approvals updated successfully!');
+      setShowReportReminder(true);
       loadRequests();
     } catch (err) {
       const errMsg = err?.response?.data?.message || err?.message || 'Failed to save budget approvals';
@@ -314,6 +319,23 @@ const BudgetApproval = () => {
         </div>
       </div>
 
+      {showReportReminder && (
+        <Alert
+          type="success"
+          showIcon
+          closable
+          onClose={() => setShowReportReminder(false)}
+          message="Budget approvals submitted"
+          description="Export the updated budget from the report page."
+          action={
+            <Button type="primary" size="small" onClick={() => navigate('/budget/report')}>
+              Go to Report
+            </Button>
+          }
+          style={{ marginBottom: 20 }}
+        />
+      )}
+
       <div
         style={{
           background: '#ffffff',
@@ -341,7 +363,10 @@ const BudgetApproval = () => {
             </div>
             <Select
               value={fiscalYear}
-              onChange={setFiscalYear}
+              onChange={(val) => {
+                setFiscalYear(val);
+                setShowReportReminder(false);
+              }}
               placeholder="--Select Fiscal Year--"
               style={{ width: '100%', height: 38 }}
             >
@@ -373,7 +398,10 @@ const BudgetApproval = () => {
             </div>
             <Select
               value={department}
-              onChange={setDepartment}
+              onChange={(val) => {
+                setDepartment(val);
+                setShowReportReminder(false);
+              }}
               placeholder="--Select Department--"
               allowClear
               showSearch

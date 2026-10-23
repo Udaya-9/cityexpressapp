@@ -10,7 +10,6 @@ import Asset from "./assets/form";
 import Memo from "./memo/form";
 import Correspondence from "./correspondence/form";
 import Budget from "./budget/form";
-import Report from "./report/form";
 
 function App() {
   return (
@@ -25,7 +24,6 @@ function App() {
         <Route path="/memo/*" element={<Dashboard><Memo /></Dashboard>} />
         <Route path="/correspondence/*" element={<Dashboard><Correspondence /></Dashboard>} />
         <Route path="/budget/*" element={<Dashboard><Budget /></Dashboard>} />
-        <Route path="/report/*" element={<Dashboard><Report /></Dashboard>} />
       </Routes>
     </BrowserRouter>
   );
