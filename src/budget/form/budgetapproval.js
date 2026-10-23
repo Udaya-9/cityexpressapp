@@ -63,7 +63,6 @@ const BudgetApproval = () => {
 
   const [fiscalYear, setFiscalYear] = useState(undefined);
   const [department, setDepartment] = useState(undefined);
-  const [requestTypeFilter, setRequestTypeFilter] = useState('ALL');
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -108,16 +107,8 @@ const BudgetApproval = () => {
       const data = await getBudgetRequestsApi({
         fiscalYear,
         departmentId: department || null,
-        requestType: requestTypeFilter !== 'ALL' ? requestTypeFilter : undefined,
       });
       let list = Array.isArray(data) ? data : [];
-      if (requestTypeFilter !== 'ALL') {
-        const isD = requestTypeFilter.toLowerCase().includes('demand');
-        list = list.filter((r) => {
-          const itemD = String(r.requestType || '').toLowerCase().includes('demand');
-          return isD ? itemD : !itemD;
-        });
-      }
       setRequests(list);
 
       const statuses = {};
@@ -135,7 +126,7 @@ const BudgetApproval = () => {
     } finally {
       setLoading(false);
     }
-  }, [fiscalYear, department, requestTypeFilter]);
+  }, [fiscalYear, department]);
 
   useEffect(() => {
     loadRequests();
@@ -332,7 +323,7 @@ const BudgetApproval = () => {
         }}
       >
         <Row gutter={[16, 12]} align="bottom">
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={10}>
             <div
               style={{
                 fontSize: 11,
@@ -364,7 +355,7 @@ const BudgetApproval = () => {
             </Select>
           </Col>
 
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={14}>
             <div
               style={{
                 fontSize: 11,
@@ -395,30 +386,6 @@ const BudgetApproval = () => {
                   </Option>
                 );
               })}
-            </Select>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: '#3b556e',
-                marginBottom: 6,
-                letterSpacing: '0.4px',
-                textTransform: 'uppercase',
-              }}
-            >
-              REQUEST TYPE
-            </div>
-            <Select
-              value={requestTypeFilter}
-              onChange={setRequestTypeFilter}
-              style={{ width: '100%', height: 38 }}
-            >
-              <Option value="ALL">All Types</Option>
-              <Option value="Annual Budget">Annual Budget</Option>
-              <Option value="onDemand Budget">On-Demand Budget</Option>
             </Select>
           </Col>
         </Row>
