@@ -216,7 +216,6 @@ const BudgetManagement = () => {
     setDepartmentFilter(undefined);
     setHeadingFilter(undefined);
     setSubHeadingFilter(undefined);
-    setRequestTypeFilter('ALL');
     const defaultFy = fiscalYears[0]?.Value || fiscalYears[0]?.FiscalYear || fiscalYears[0]?.Label;
     setFiscalYearFilter(defaultFy);
     setAppliedFilters({
