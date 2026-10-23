@@ -79,6 +79,7 @@ export const getBudgetHeadingsApi = async (fiscalYear) => {
     BudgetType: item.BudgetType || 'Financial',
     fiscalYear: item.Fiscalyear,
     Fiscalyear: item.Fiscalyear,
+    isUsed: item.isUsed !== undefined ? Number(item.isUsed) : 0,
   }));
 };
 
@@ -186,6 +187,7 @@ export const getBudgetSubheadingsApi = async (fiscalYear, headingCode) => {
     requestType: item.RequestType || 'Annual Budget',
     fiscalYear: item.Fiscalyear,
     Fiscalyear: item.Fiscalyear,
+    isUsed: item.isUsed !== undefined ? Number(item.isUsed) : 0,
   }));
   if (headingCode) {
     return list.filter((s) => s.headingCode === headingCode.trim());
