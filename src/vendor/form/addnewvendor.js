@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-    Card, Form, Input, Select, Switch, Button, Space,
+    Card, Form, Input, Select, Button, Space,
     Typography, Row, Col, Divider, message,
 } from "antd";
 import {
@@ -22,9 +22,6 @@ import {
 const { Text } = Typography;
 const { Option } = Select;
 
-// Replace this with your actual logged-in user's ID from your Auth state
-const CURRENT_USER_ID = "0227626F-2700-4DD6-B1FE-62D614BA4412";
-
 const CreateVendor = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -33,6 +30,11 @@ const CreateVendor = () => {
     const creating = useSelector(selectVendorCreating);
     const error = useSelector(selectVendorError);
     const success = useSelector(selectVendorSuccess);
+
+    // Retrieve the application user ID from localStorage
+    const storedUser = localStorage.getItem("user");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    const CURRENT_USER_ID = user?.id; // "22832DF7-B958-48AB-8AD0-838E888636BD"
 
     // Handle Success & Error
     useEffect(() => {
@@ -62,7 +64,7 @@ const CreateVendor = () => {
             dispatch(
                 createVendor({
                     formValues: values,
-                    createdBy: CURRENT_USER_ID,
+                    createdBy: CURRENT_USER_ID, // Passed successfully to the thunk
                 })
             );
         } catch (err) {
@@ -200,7 +202,7 @@ const CreateVendor = () => {
                         >
                             <Input placeholder="Enter registration number" prefix={<IdcardOutlined />} />
                         </Form.Item>
-                    </Col>                   
+                    </Col>    
                 </Row>
 
                 <Divider />

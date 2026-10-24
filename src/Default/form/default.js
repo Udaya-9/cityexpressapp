@@ -451,9 +451,9 @@ const Dashboard = ({ children }) => {
           </Header>
 
           {/* ================= PAGE TITLE STRIP ================= */}
-          <div className="ce-page-strip">
+          {/* <div className="ce-page-strip">
             <Text className="ce-page-title">{LABEL_OF[selectedKey] || 'Dashboard'}</Text>
-          </div>
+          </div> */}
 
           {/* ================= CONTENT ================= */}
           <Content
