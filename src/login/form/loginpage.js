@@ -7,11 +7,9 @@ import {
   LockOutlined,
   EyeInvisibleOutlined,
   EyeTwoTone,
-  ArrowRightOutlined,
 } from "@ant-design/icons";
 import "./style.css";
 import logo from "../../Images/Logo_.png";
-import Password from "antd/es/input/Password";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -50,45 +48,18 @@ const LoginPage = () => {
     }
   };
 
-  const now = new Date();
-  const currentYear = now.getFullYear();
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="login-page">
-      {/* Left brand panel */}
-      <div className="login-brand">
-        <div className="brand-inner">
-          <div className="brand-logo">
-            <img
-              src={logo}
-              alt="City Express Logo"
-              className="brand-logo-img"
-            />
-          </div>
-          <h1 className="brand-title">City Express</h1>
-          <p className="brand-tagline">Money Transfer</p>
+      <main className="login-card">
+        <div className="card-stripe" />
 
-          <div className="brand-divider" />
+        <div className="card-body">
+          <img src={logo} alt="City Express Logo" className="login-logo" />
 
-          <p className="brand-desc">
-            From requisitions and memos to fixed assets, approvals, dispatch,
-            correspondence and stock.
-          </p>
-
-          <div className="brand-footer">
-            © {currentYear} City Express Money Transfer Pvt. Ltd · All rights
-            reserved
-          </div>
-        </div>
-      </div>
-
-      {/* Right form panel */}
-      <div className="login-form-panel">
-        <div className="form-wrap">
-          <div className="form-header">
-            <h2 className="form-title">Welcome back</h2>
-            <p className="form-subtitle">Sign in to your account to continue</p>
-          </div>
-
+          <h1 className="login-title">Sign in</h1>
+         
           <Form
             name="login"
             onFinish={onFinish}
@@ -98,7 +69,7 @@ const LoginPage = () => {
             size="large"
           >
             <Form.Item
-              label="Username or Email"
+              label="UserName"
               name="username"
               rules={[
                 { required: true, message: "Please enter your username" },
@@ -125,7 +96,7 @@ const LoginPage = () => {
                 className="custom-input"
                 autoComplete="current-password"
                 iconRender={(visible) =>
-                  visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+                  visible ? <EyeTwoTone twoToneColor="#0B3D91" /> : <EyeInvisibleOutlined />
                 }
               />
             </Form.Item>
@@ -144,17 +115,16 @@ const LoginPage = () => {
                 loading={loading}
                 className="login-button"
               >
-                Sign In
-                <ArrowRightOutlined className="btn-arrow" />
+                Sign in
               </Button>
             </Form.Item>
           </Form>
-
-          <div className="form-footer">
-            Need help? <a href="/support">Contact support</a>
-          </div>
         </div>
-      </div>
+      </main>
+
+      <footer className="page-footer">
+        © {currentYear} City Express Money Transfer Pvt. Ltd. All rights reserved.
+      </footer>
     </div>
   );
 };
