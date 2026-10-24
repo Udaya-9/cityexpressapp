@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, Button, Space, Input, Typography, Tooltip, Empty } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { Table, Button, Space, Input, Typography, Tooltip, Empty, Spin } from "antd";
 import {
     PlusOutlined,
     EditOutlined,
@@ -8,6 +9,12 @@ import {
     SearchOutlined,
     CloseCircleOutlined,
 } from "@ant-design/icons";
+import {
+    listvendor,
+    selectVendorList,
+    selectLoadingVendors,
+    selectVendorListError,
+} from "../API/verdorslice"; 
 
 const { Text } = Typography;
 
@@ -26,71 +33,8 @@ const C = {
     neutralSoft: "#EEF1F6",
 };
 
-const data = [
-    {
-        key: 1,
-        vendorName: "Tech Solutions Pvt Ltd",
-        contactPerson: "Ram Sharma",
-        address: "Kathmandu, Nepal",
-        mobileNo: "9841234567",
-        phoneNo: "01-4234567",
-        email: "info@techsolutions.com",
-        panVat: "123456789",
-        registrationNo: "REG-001",
-        isActive: true,
-    },
-    {
-        key: 2,
-        vendorName: "Global Traders",
-        contactPerson: "Sita Thapa",
-        address: "Pokhara, Nepal",
-        mobileNo: "9847654321",
-        phoneNo: "061-523456",
-        email: "contact@globaltraders.com",
-        panVat: "987654321",
-        registrationNo: "REG-002",
-        isActive: true,
-    },
-    {
-        key: 3,
-        vendorName: "Nepal Supplies",
-        contactPerson: "Hari Gurung",
-        address: "Biratnagar, Nepal",
-        mobileNo: "9801234567",
-        phoneNo: "021-523456",
-        email: "info@nepalsupplies.com",
-        panVat: "456789123",
-        registrationNo: "REG-003",
-        isActive: false,
-    },
-    {
-        key: 4,
-        vendorName: "Everest Hardware",
-        contactPerson: "Bikash Rai",
-        address: "Lalitpur, Nepal",
-        mobileNo: "9812345678",
-        phoneNo: "01-5566778",
-        email: "sales@everesthardware.com",
-        panVat: "321654987",
-        registrationNo: "REG-004",
-        isActive: true,
-    },
-    {
-        key: 5,
-        vendorName: "Himalayan Office Supplies",
-        contactPerson: "Anita Karki",
-        address: "Bhaktapur, Nepal",
-        mobileNo: "9856781234",
-        phoneNo: "01-6677889",
-        email: "orders@himalayanoffice.com",
-        panVat: "789123456",
-        registrationNo: "REG-005",
-        isActive: false,
-    },
-];
-
 const initials = (name) =>
-    name
+    (name || "")
         .split(" ")
         .filter(Boolean)
         .slice(0, 2)
@@ -99,80 +43,65 @@ const initials = (name) =>
 
 const VendorList = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    // Selectors from Redux store
+    const vendors = useSelector(selectVendorList) || [];
+    const loading = useSelector(selectLoadingVendors);
+    const listError = useSelector(selectVendorListError);
+
     const [searchText, setSearchText] = useState("");
-    const [status, setStatus] = useState("all");
 
-    // Counts per status (based on full data, not filtered)
-    const counts = useMemo(
-        () => ({
-            all: data.length,
-            active: data.filter((v) => v.isActive).length,
-            inactive: data.filter((v) => !v.isActive).length,
-        }),
-        []
-    );
+    // Fetch vendors on mount
+    useEffect(() => {      
+        const storedUser = localStorage.getItem("user");
+        const user = storedUser ? JSON.parse(storedUser) : null;        
+        const createdBy = user?.id; 
+        if (createdBy) {
+            dispatch(listvendor(createdBy));
+        }
+    }, [dispatch]);
 
-    // Filter: apply search + status together so search works in every tab
+    // Helper to evaluate active status safely based on your DB schema
+    const isVendorActive = (vendor) => {
+        if (vendor.IsBlocked === 0 || vendor.IsBlocked === "Enabled" || vendor.IsBlocked === true) {
+            return true;
+        }
+        return false;
+    };
+
+    // Filter: apply search query across all vendor fields
     const filteredData = useMemo(() => {
         const query = searchText.trim().toLowerCase();
-        return data.filter((vendor) => {
-            // Status filter
-            if (status === "active" && !vendor.isActive) return false;
-            if (status === "inactive" && vendor.isActive) return false;
+        if (!query) return vendors;
 
-            // Search filter (applies across all tabs)
-            if (!query) return true;
+        return vendors.filter((vendor) => {
             return [
-                vendor.vendorName,
-                vendor.contactPerson,
-                vendor.address,
-                vendor.mobileNo,
-                vendor.phoneNo,
-                vendor.email,
-                vendor.panVat,
-                vendor.registrationNo,
+                vendor.VendorName,
+                vendor.ContactPerson,
+                vendor.Address,
+                vendor.MobileNo,
+                vendor.PhoneNo,
+                vendor.eMailAddress,
+                vendor.PAN,
+                vendor.VAT,
+                vendor.RegistrationNo,
             ]
+                .filter(Boolean)
                 .join(" ")
                 .toLowerCase()
                 .includes(query);
         });
-    }, [searchText, status]);
-
-    // Counts for the currently visible tabs based on search
-    const searchCounts = useMemo(() => {
-        const query = searchText.trim().toLowerCase();
-        const matchesSearch = (vendor) => {
-            if (!query) return true;
-            return [
-                vendor.vendorName,
-                vendor.contactPerson,
-                vendor.address,
-                vendor.mobileNo,
-                vendor.phoneNo,
-                vendor.email,
-                vendor.panVat,
-                vendor.registrationNo,
-            ]
-                .join(" ")
-                .toLowerCase()
-                .includes(query);
-        };
-        const searched = data.filter(matchesSearch);
-        return {
-            all: searched.length,
-            active: searched.filter((v) => v.isActive).length,
-            inactive: searched.filter((v) => !v.isActive).length,
-        };
-    }, [searchText]);
+    }, [vendors, searchText]);
 
     const columns = [
         {
             title: "Vendor",
-            dataIndex: "vendorName",
-            key: "vendorName",
+            dataIndex: "VendorName",
+            key: "VendorName",
             fixed: "left",
             width: 300,
-            sorter: (a, b) => a.vendorName.localeCompare(b.vendorName),
+            sorter: (a, b) => (a.VendorName || "").localeCompare(b.VendorName || ""),
             render: (value, record) => (
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div className="vl-avatar">{initials(value)}</div>
@@ -181,7 +110,7 @@ const VendorList = () => {
                             {value}
                         </Text>
                         <Text style={{ color: C.muted, fontSize: 12 }}>
-                            {record.registrationNo}
+                            {record.RegistrationNo}
                         </Text>
                     </div>
                 </div>
@@ -189,10 +118,10 @@ const VendorList = () => {
         },
         {
             title: "Contact Person",
-            dataIndex: "contactPerson",
-            key: "contactPerson",
+            dataIndex: "ContactPerson",
+            key: "ContactPerson",
             width: 160,
-            sorter: (a, b) => a.contactPerson.localeCompare(b.contactPerson),
+            sorter: (a, b) => (a.ContactPerson || "").localeCompare(b.ContactPerson || ""),
         },
         {
             title: "Contact Details",
@@ -201,18 +130,18 @@ const VendorList = () => {
             render: (_, record) => (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                     <Text style={{ color: C.text, fontSize: 13 }}>
-                        {record.mobileNo}
+                        {record.MobileNo}
                     </Text>
                     <Text style={{ color: C.muted, fontSize: 12 }}>
-                        {record.phoneNo}
+                        {record.PhoneNo}
                     </Text>
                 </div>
             ),
         },
         {
             title: "Email",
-            dataIndex: "email",
-            key: "email",
+            dataIndex: "eMailAddress",
+            key: "eMailAddress",
             width: 240,
             render: (v) => (
                 <Text style={{ color: C.brand, fontSize: 13 }}>{v}</Text>
@@ -220,43 +149,47 @@ const VendorList = () => {
         },
         {
             title: "Address",
-            dataIndex: "address",
-            key: "address",
+            dataIndex: "Address",
+            key: "Address",
             width: 180,
         },
         {
             title: "PAN/VAT",
-            dataIndex: "panVat",
             key: "panVat",
             width: 140,
+            render: (_, record) => record.PAN || record.VAT || "-",
         },
         {
             title: "Status",
             key: "status",
             width: 130,
-            render: (_, record) => (
-                <span
-                    className={`vl-status ${
-                        record.isActive ? "vl-status-on" : "vl-status-off"
-                    }`}
-                >
-                    <i />
-                    {record.isActive ? "Active" : "Inactive"}
-                </span>
-            ),
+            render: (_, record) => {
+                const active = isVendorActive(record);
+                return (
+                    <span
+                        className={`vl-status ${
+                            active ? "vl-status-on" : "vl-status-off"
+                        }`}
+                    >
+                        <i />
+                        {active ? "Active" : "Inactive"}
+                    </span>
+                );
+            },
         },
         {
             title: "Action",
             key: "action",
             fixed: "right",
             width: 120,
-            render: () => (
+            render: (_, record) => (
                 <Space size={8}>
                     <Tooltip title="View">
                         <Button
                             className="vl-action"
                             icon={<EyeOutlined />}
                             aria-label="View"
+                            onClick={() => navigate(`view/${record.VendorId}`)}
                         />
                     </Tooltip>
                     <Tooltip title="Edit">
@@ -264,17 +197,12 @@ const VendorList = () => {
                             className="vl-action"
                             icon={<EditOutlined />}
                             aria-label="Edit"
+                            onClick={() => navigate(`edit/${record.VendorId}`)}
                         />
                     </Tooltip>
                 </Space>
             ),
         },
-    ];
-
-    const tabs = [
-        { key: "all", label: "All" },
-        { key: "active", label: "Active" },
-        { key: "inactive", label: "Inactive" },
     ];
 
     const hasSearch = searchText.trim().length > 0;
@@ -301,24 +229,15 @@ const VendorList = () => {
                 </Button>
             </div>
 
-            {/* ================= Toolbar ================= */}
-            <div className="vl-toolbar">
-                <div className="vl-tabs" role="tablist" aria-label="Filter by status">
-                    {tabs.map((t) => (
-                        <button
-                            key={t.key}
-                            type="button"
-                            role="tab"
-                            aria-selected={status === t.key}
-                            className={`vl-tab ${status === t.key ? "is-active" : ""}`}
-                            onClick={() => setStatus(t.key)}
-                        >
-                            {t.label}
-                            <span className="vl-count">{searchCounts[t.key]}</span>
-                        </button>
-                    ))}
+            {/* Error banner if fetching failed */}
+            {listError && (
+                <div style={{ marginBottom: 16, color: "#ff4d4f", background: "#fff1f0", padding: "10px 16px", borderRadius: 8, border: "1px solid #ffa39e" }}>
+                    Error loading vendors: {listError}
                 </div>
+            )}
 
+            {/* ================= Toolbar (Search Only) ================= */}
+            <div className="vl-toolbar">
                 <div className="vl-search-wrap">
                     <Input
                         allowClear
@@ -335,9 +254,6 @@ const VendorList = () => {
                                 Showing <b>{filteredData.length}</b> result
                                 {filteredData.length === 1 ? "" : "s"} for{" "}
                                 <b>"{searchText}"</b>
-                                {status !== "all" && (
-                                    <> in <b>{status}</b></>
-                                )}
                             </span>
                             <button
                                 type="button"
@@ -355,7 +271,11 @@ const VendorList = () => {
                 className="vl-table"
                 columns={columns}
                 dataSource={filteredData}
-                rowKey="key"
+                rowKey="VendorId"
+                loading={{
+                    spinning: loading,
+                    indicator: <Spin size="large" />,
+                }}
                 scroll={{ x: 1500 }}
                 pagination={{
                     pageSize: 10,
@@ -371,11 +291,7 @@ const VendorList = () => {
                             description={
                                 <span style={{ color: C.muted }}>
                                     {hasSearch
-                                        ? `No vendors match "${searchText}"${
-                                              status !== "all"
-                                                  ? ` in ${status}`
-                                                  : ""
-                                          }.`
+                                        ? `No vendors match "${searchText}".`
                                         : "No vendors found."}
                                 </span>
                             }
@@ -414,63 +330,17 @@ const VendorList = () => {
                     color: ${C.muted};
                 }
 
-                /* ---------- Toolbar ---------- */
+                /* ---------- Toolbar (Borderless & Right-aligned) ---------- */
                 .vl-toolbar {
                     display: flex;
                     align-items: center;
-                    justify-content: space-between;
+                    justify-content: flex-end;
                     gap: 16px;
                     flex-wrap: wrap;
-                    padding: 14px 16px;
-                    margin-bottom: 20px;
-                    background: #fff;
-                    border: 1px solid ${C.border};
-                    border-radius: 14px;
-                }
-
-                /* ---------- Status tabs ---------- */
-                .vl-tabs {
-                    display: inline-flex;
-                    padding: 4px;
-                    gap: 2px;
-                    border-radius: 12px;
-                    background: ${C.page};
-                    border: 1px solid ${C.border};
-                }
-                .vl-tab {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 7px 14px;
-                    border: none;
-                    border-radius: 9px;
+                    padding: 0;
+                    margin-bottom: 16px;
                     background: transparent;
-                    color: ${C.muted};
-                    font: inherit;
-                    font-size: 13.5px;
-                    font-weight: 600;
-                    cursor: pointer;
-                }
-                .vl-tab:hover { color: ${C.text}; }
-                .vl-tab.is-active {
-                    background: ${C.navy};
-                    color: #fff;
-                }
-                .vl-tab:focus-visible {
-                    outline: 2px solid ${C.brand};
-                    outline-offset: 2px;
-                }
-                .vl-count {
-                    min-width: 22px;
-                    padding: 0 6px;
-                    border-radius: 20px;
-                    font-size: 12px;
-                    line-height: 20px;
-                    text-align: center;
-                    background: rgba(102, 112, 133, 0.14);
-                }
-                .vl-tab.is-active .vl-count {
-                    background: rgba(255, 255, 255, 0.2);
+                    border: none;
                 }
 
                 /* ---------- Search ---------- */
@@ -485,7 +355,7 @@ const VendorList = () => {
                 .vl-search.ant-input-affix-wrapper {
                     height: 42px;
                     border-radius: 10px;
-                    background: ${C.page};
+                    background: #fff;
                     border-color: ${C.border};
                     box-shadow: none;
                     width: 100%;

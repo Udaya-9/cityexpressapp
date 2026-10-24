@@ -22,3 +22,9 @@ export const createVendorApi = async (payload) => {
     const response = await api.post("/vendor/new", payload);
     return response.data;
 };
+
+export const listvendorsApi=async (payload)=>
+{
+    const response=await api.post("vendor/listvendor",payload);
+    return response.data;
+}
