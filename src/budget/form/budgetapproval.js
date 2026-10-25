@@ -22,11 +22,10 @@ import {
   FolderOpenOutlined,
 } from '@ant-design/icons';
 import {
-  getFiscalYearsApi,
-  getDepartmentsApi,
   getBudgetRequestsApi,
   bulkUpdateBudgetApprovalStatusApi,
 } from '../API/budgetservice';
+import genericService from '../../API/generic/genericservice';
 import { findStoredDepartment } from '../../API/api';
 
 const { Text } = Typography;
@@ -82,8 +81,8 @@ const BudgetApproval = () => {
     (async () => {
       try {
         const [fyList, deptList] = await Promise.all([
-          getFiscalYearsApi(),
-          getDepartmentsApi(),
+          genericService.getFiscalYears(),
+          genericService.getDepartments(),
         ]);
         if (!isMounted) return;
         setFiscalYears(fyList || []);

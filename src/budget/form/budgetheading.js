@@ -31,7 +31,6 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import {
-  getFiscalYearsApi,
   getBudgetHeadingsApi,
   createBudgetHeadingApi,
   updateBudgetHeadingApi,
@@ -41,8 +40,8 @@ import {
   updateBudgetSubheadingApi,
   deleteBudgetSubheadingApi,
   copyBudgetStructureApi,
-  getStaticDataApi,
 } from '../API/budgetservice';
+import genericService from '../../API/generic/genericservice';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -55,6 +54,15 @@ const C = {
   text: '#16202f',
   muted: '#667085',
   subtext: '#526071',
+};
+
+const getNextHeadingCode = (headings) => {
+  const used = new Set(headings.map((h) => (h.code || '').trim().toUpperCase()));
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (let i = 0; i < alphabet.length; i += 1) {
+    if (!used.has(alphabet[i])) return alphabet[i];
+  }
+  return 'A';
 };
 
 const BudgetHeading = () => {
@@ -100,8 +108,8 @@ const BudgetHeading = () => {
     (async () => {
       try {
         const [list, sTypes] = await Promise.all([
-          getFiscalYearsApi(),
-          getStaticDataApi('Budget'),
+          genericService.getFiscalYears(),
+          genericService.getStaticData('Budget'),
         ]);
         if (!isMounted) return;
         setFiscalYears(list || []);
@@ -173,8 +181,10 @@ const BudgetHeading = () => {
       return;
     }
 
+    const isEditing = Boolean(editingHeadingId);
+
     try {
-      if (editingHeadingId) {
+      if (isEditing) {
         await updateBudgetHeadingApi(editingHeadingId, {
           fiscalYear: fy,
           code: headingCode.trim().toUpperCase(),
@@ -191,10 +201,17 @@ const BudgetHeading = () => {
         });
         message.success('Budget heading created successfully');
       }
-      setHeadingCode('');
+
       setHeadingTitle('');
       setEditingHeadingId(null);
-      setShowHeadingForm(false);
+
+      if (isEditing) {
+        setHeadingCode('');
+        setShowHeadingForm(false);
+      } else {
+        setHeadingCode(getNextHeadingCode([...headings, { code: trimmedCode }]));
+      }
+
       if (fy !== selectedFiscalYear) {
         setSelectedFiscalYear(fy);
       } else {
@@ -259,9 +276,10 @@ const BudgetHeading = () => {
     const headTitle = selectedHead ? (selectedHead.heading || selectedHead.title) : subMainHeading;
     const headId = selectedHead ? (selectedHead.BudgetHeadId || selectedHead.id) : null;
     const resolvedBudgetType = selectedHead?.budgetType || subType || 'Financial';
+    const isEditing = Boolean(editingSubId);
 
     try {
-      if (editingSubId) {
+      if (isEditing) {
         await updateBudgetSubheadingApi(editingSubId, {
           fiscalYear: fy,
           headingCode: headCode,
@@ -284,9 +302,14 @@ const BudgetHeading = () => {
         });
         message.success('Subheading created successfully');
       }
+
       setSubTitle('');
       setEditingSubId(null);
-      setShowSubForm(false);
+
+      if (isEditing) {
+        setShowSubForm(false);
+      }
+
       if (fy !== selectedFiscalYear) {
         setSelectedFiscalYear(fy);
       } else {
@@ -676,16 +699,7 @@ const BudgetHeading = () => {
             onClick={() => {
               if (activeTab === 'heading') {
                 setEditingHeadingId(null);
-                const used = new Set(headings.map((h) => (h.code || '').trim().toUpperCase()));
-                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                let nextCode = 'A';
-                for (let i = 0; i < alphabet.length; i++) {
-                  if (!used.has(alphabet[i])) {
-                    nextCode = alphabet[i];
-                    break;
-                  }
-                }
-                setHeadingCode(nextCode);
+                setHeadingCode(getNextHeadingCode(headings));
                 setHeadingTitle('');
                 setHeadingType('Financial');
                 setShowHeadingForm(!showHeadingForm);

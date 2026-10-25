@@ -1,6 +1,4 @@
-import api, { getFiscalYearsApi } from '../../API/api';
-
-export { getFiscalYearsApi };
+import api from '../../API/api';
 
 export const getStoredOrgId = () => {
   const direct = localStorage.getItem('organizationId');
@@ -71,65 +69,6 @@ export const updateHandoverStatusApi = async ({ key, referenceId, handoverStatus
     handoverDate,
   });
   return res.data?.data;
-};
-
-export const getDepartmentsApi = async () => {
-  try {
-    const res = await api.post('/list/getGenericList', { FilterType: 'Department' });
-    const list = res.data?.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.map((d) => ({
-        Value: d.Value,
-        Label: (d.Label || '').trim(),
-        DepartmentId: d.Value,
-        DepartmentName: (d.Label || '').trim(),
-      }));
-    }
-  } catch (err) {
-    console.error('Failed to load departments from API:', err);
-  }
-  return [];
-};
-
-export const getUsersApi = async (orgId, departmentId) => {
-  try {
-    const res = await api.post('/list/getGenericList', {
-      FilterType: 'User',
-      DepartmentId: departmentId || undefined,
-    });
-    const list = res.data?.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.map((u) => ({
-        Value: u.Value,
-        Label: (u.Label || '').trim(),
-        Id: u.Value,
-        FullName: (u.Label || '').trim(),
-        DepartmentId: u.DepartmentId || null,
-        departmentId: u.DepartmentId || null,
-      }));
-    }
-  } catch (err) {
-    console.error('Failed to load users from API:', err);
-  }
-  return [];
-};
-
-export const getVendorsApi = async () => {
-  try {
-    const res = await api.post('/list/getGenericList', { FilterType: 'Vendor' });
-    const list = res.data?.data || [];
-    if (Array.isArray(list) && list.length > 0) {
-      return list.map((v) => ({
-        Value: v.Value,
-        Label: (v.Label || '').trim(),
-        VendorId: v.Value,
-        VendorName: (v.Label || '').trim(),
-      }));
-    }
-  } catch (err) {
-    console.error('Failed to load vendors from API:', err);
-  }
-  return [];
 };
 
 

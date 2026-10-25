@@ -7,7 +7,8 @@ import {
   DownloadOutlined,
   FilterOutlined,
 } from '@ant-design/icons';
-import { getFiscalYearsApi, getDepartmentsApi, getBudgetRequestsApi } from '../../budget/API/budgetservice';
+import { getBudgetRequestsApi } from '../../budget/API/budgetservice';
+import genericService from '../../API/generic/genericservice';
 import { findStoredDepartment } from '../../API/api';
 
 const { Option } = Select;
@@ -216,7 +217,7 @@ const BudgetReport = () => {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      const [fyList, deptList] = await Promise.all([getFiscalYearsApi(), getDepartmentsApi()]);
+      const [fyList, deptList] = await Promise.all([genericService.getFiscalYears(), genericService.getDepartments()]);
       if (!isMounted) return;
       setFiscalYears(fyList || []);
       setDepartments(deptList || []);

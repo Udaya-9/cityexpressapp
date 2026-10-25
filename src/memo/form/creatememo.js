@@ -23,7 +23,7 @@ import {
     InboxOutlined,
 } from "@ant-design/icons";
 import { createMemoApi } from "../API/memoservice";
-import { getStaticDataApi } from "../../API/api";
+import genericService from "../../API/generic/genericservice";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -39,7 +39,7 @@ const CreateMemo = () => {
 
     useEffect(() => {
         (async () => {
-            const list = await getStaticDataApi("Memo");
+            const list = await genericService.getStaticData("Memo");
             if (list?.length) setCategories(list);
         })();
     }, []);
