@@ -61,19 +61,6 @@ api.interceptors.response.use(
     }
 );
 
-export const getStaticDataApi = async (module) => {
-    try {
-        const res = await api.post("/list/getGenericList", {
-            FilterType: "StaticData",
-            module: module || null,
-        });
-        return res.data?.data || [];
-    } catch (err) {
-        console.error(`Failed to fetch static data for ${module}:`, err);
-        return [];
-    }
-};
-
 export const getStoredDepartmentId = () => {
     try {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -92,20 +79,6 @@ export const findStoredDepartment = (departments = []) => {
             (d) => String(d?.Value || d?.DepartmentId || "").toLowerCase() === target
         ) || null
     );
-};
-
-export const getFiscalYearsApi = async () => {
-    try {
-        const res = await api.post("/list/getGenericList", { FilterType: "FiscalYear" });
-        return (res.data?.data || [])
-            .map((f) => {
-                const year = (f.Label || f.FiscalYear || f.Value || "").toString().trim();
-                return { Value: year, Label: year, FiscalYear: year, FiscalId: f.Value };
-            })
-            .sort((a, b) => b.FiscalYear.localeCompare(a.FiscalYear, undefined, { numeric: true, sensitivity: "base" }));
-    } catch {
-        return [];
-    }
 };
 
 export default api;

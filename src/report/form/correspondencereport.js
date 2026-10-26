@@ -10,7 +10,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { executeReportApi } from '../API/reportservice';
-import { getDepartmentsApi, getVendorsApi } from '../../correspondence/API/correspondenceservice';
+import genericService from '../../API/generic/genericservice';
 import NepaliDatePicker, { bsToAdString } from '../../correspondence/components/NepaliDatePicker';
 import { findStoredDepartment } from '../../API/api';
 
@@ -141,7 +141,7 @@ const CorrespondenceReport = () => {
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      const [deptList, vendorList] = await Promise.all([getDepartmentsApi(), getVendorsApi()]);
+      const [deptList, vendorList] = await Promise.all([genericService.getDepartments(), genericService.getVendors()]);
       if (!isMounted) return;
       setDepartments(deptList || []);
       setVendors(vendorList || []);

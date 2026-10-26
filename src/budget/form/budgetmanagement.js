@@ -9,7 +9,6 @@ import {
   message,
   Empty,
   Typography,
-  Alert,
   Tag,
   Input,
 } from 'antd';
@@ -27,14 +26,12 @@ import {
   DollarCircleOutlined,
 } from '@ant-design/icons';
 import {
-  getFiscalYearsApi,
-  getDepartmentsApi,
   getBudgetHeadingsApi,
   getBudgetSubheadingsApi,
   getBudgetRequestsApi,
   submitBudgetRequestApi,
-  getStaticDataApi,
 } from '../API/budgetservice';
+import genericService from '../../API/generic/genericservice';
 import { findStoredDepartment } from '../../API/api';
 
 const { Text } = Typography;
@@ -93,7 +90,6 @@ const BudgetManagement = () => {
   const [createFiscalYear, setCreateFiscalYear] = useState(undefined);
   const [createHeadingFilter, setCreateHeadingFilter] = useState('ALL');
   const [createRequestType, setCreateRequestType] = useState('Annual Budget'); // 'Annual Budget' | 'onDemand Budget'
-  const [existingAnnualApproved, setExistingAnnualApproved] = useState(false);
   const [onDemandRemarks, setOnDemandRemarks] = useState({});
   const [createHeadings, setCreateHeadings] = useState([]);
   const [createSubheadings, setCreateSubheadings] = useState([]);
@@ -105,9 +101,9 @@ const BudgetManagement = () => {
     (async () => {
       try {
         const [fyList, deptList, reportTypeList] = await Promise.all([
-          getFiscalYearsApi(),
-          getDepartmentsApi(),
-          getStaticDataApi('Report'),
+          genericService.getFiscalYears(),
+          genericService.getDepartments(),
+          genericService.getStaticData('Report'),
         ]);
         if (!isMounted) return;
         setFiscalYears(fyList || []);
@@ -242,43 +238,13 @@ const BudgetManagement = () => {
       let isMounted = true;
       (async () => {
         try {
-          const [hList, sList, reqList] = await Promise.all([
+          const [hList, sList] = await Promise.all([
             getBudgetHeadingsApi(createFiscalYear),
             getBudgetSubheadingsApi(createFiscalYear),
-            getBudgetRequestsApi({ fiscalYear: createFiscalYear }),
           ]);
           if (!isMounted) return;
           setCreateHeadings(Array.isArray(hList) ? hList : []);
           setCreateSubheadings(Array.isArray(sList) ? sList : []);
-
-          const loggedUser = (() => {
-            try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
-          })();
-          const deptId = loggedUser.departmentId || loggedUser.DepartmentId || null;
-
-          const deptReqs = (Array.isArray(reqList) ? reqList : []).filter(
-            (r) => (deptId ? r.departmentId === deptId : false)
-          );
-          const annualReqs = deptReqs.filter(
-            (r) => !String(r.requestType || '').toLowerCase().includes('demand')
-          );
-          const isApproved = deptId
-            ? annualReqs.some((r) => String(r.status || '').toLowerCase().startsWith('approv'))
-            : false;
-          const isPending = deptId
-            ? annualReqs.some((r) => String(r.status || '').toLowerCase() === 'pending')
-            : false;
-
-          setExistingAnnualApproved(isApproved);
-
-          if (isPending) {
-            const prefill = {};
-            annualReqs.forEach((r) => {
-              const k = r.BudgetSubHeadId || r.code || r.subHeadingCode;
-              if (k) prefill[k] = r.requestedAmount;
-            });
-            setRequestedAmounts((prev) => ({ ...prefill, ...prev }));
-          }
         } catch {
           message.error('Failed to load budget categories');
         }
@@ -349,15 +315,10 @@ const BudgetManagement = () => {
   }, [groupedCreateHeadings, requestedAmounts]);
 
   const grandTotal = useMemo(() => {
-    return Object.values(subtotals).reduce((acc, curr) => acc + curr, 0);
-  }, [subtotals]);
+    return groupedCreateHeadings.reduce((acc, head) => acc + (subtotals[head.code] || 0), 0);
+  }, [groupedCreateHeadings, subtotals]);
 
   const handleSubmitBudget = async () => {
-    if (createRequestType === 'Annual Budget' && existingAnnualApproved) {
-      message.warning('The annual budget for this department has already been approved and locked.');
-      return;
-    }
-
     if (grandTotal <= 0) {
       message.warning('Please enter an amount greater than 0');
       return;
@@ -1005,16 +966,6 @@ const BudgetManagement = () => {
             </div>
           </div>
 
-          {createRequestType === 'Annual Budget' && existingAnnualApproved && (
-            <Alert
-              type="warning"
-              showIcon
-              message="Annual Budget Locked"
-              description={`The annual budget for FY ${createFiscalYear} has already been approved. Only 1 Annual Budget is allowed per department per fiscal year. Please select On-Demand Budget for additional requests.`}
-              style={{ marginBottom: 20 }}
-            />
-          )}
-
           {displayedCreateHeadings.length === 0 ? (
             <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: 40, textAlign: 'center' }}>
               <Empty description="No budget headings available for this Fiscal Year." />
@@ -1102,7 +1053,6 @@ const BudgetManagement = () => {
                                     <InputNumber
                                       min={0}
                                       bordered={false}
-                                      disabled={createRequestType === 'Annual Budget' && existingAnnualApproved}
                                       value={requestedAmounts[key] || 0}
                                       onChange={(val) => handleAmountChange(key, val)}
                                       formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -1190,32 +1140,22 @@ const BudgetManagement = () => {
               </div>
 
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                {(() => {
-                  const isLocked = createRequestType === 'Annual Budget' && existingAnnualApproved;
-                  return (
-                    <Button
-                      type="primary"
-                      size="large"
-                      loading={submitting}
-                      disabled={isLocked}
-                      onClick={handleSubmitBudget}
-                      style={{
-                        background: isLocked ? '#cbd5e1' : '#01519b',
-                        borderColor: isLocked ? '#cbd5e1' : '#01519b',
-                        color: isLocked ? '#64748b' : '#ffffff',
-                        fontWeight: 700,
-                        height: 42,
-                        borderRadius: 6,
-                        padding: '0 36px',
-                        cursor: isLocked ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      <span style={{ color: isLocked ? '#64748b' : '#ffffff', fontWeight: 700 }}>
-                        {isLocked ? 'Annual Budget Locked (Already Approved)' : 'Submit Budget Request'}
-                      </span>
-                    </Button>
-                  );
-                })()}
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={submitting}
+                  onClick={handleSubmitBudget}
+                  style={{
+                    background: '#01519b',
+                    borderColor: '#01519b',
+                    fontWeight: 700,
+                    height: 42,
+                    borderRadius: 6,
+                    padding: '0 36px',
+                  }}
+                >
+                  Submit Budget Request
+                </Button>
               </div>
             </div>
           )}

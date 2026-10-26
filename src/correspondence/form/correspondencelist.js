@@ -30,10 +30,8 @@ import {
 import {
   getCorrespondenceApi,
   updateHandoverStatusApi,
-  getDepartmentsApi,
-  getUsersApi,
-  getFiscalYearsApi,
 } from '../API/correspondenceservice';
+import genericService from '../../API/generic/genericservice';
 import NepaliDate from 'nepali-date-converter';
 import NepaliDatePicker, { bsToAdString } from '../components/NepaliDatePicker';
 import { findStoredDepartment } from '../../API/api';
@@ -152,9 +150,9 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
     (async () => {
       try {
         const [deptList, userList, fyList] = await Promise.all([
-          getDepartmentsApi(),
-          getUsersApi(),
-          getFiscalYearsApi(),
+          genericService.getDepartments(),
+          genericService.getUsers(),
+          genericService.getFiscalYears(),
         ]);
         if (!isMounted) return;
         setRawDeptList(deptList || []);

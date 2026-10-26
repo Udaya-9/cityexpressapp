@@ -22,7 +22,8 @@ import {
   AppstoreOutlined,
 } from '@ant-design/icons';
 
-import api, { getFiscalYearsApi } from '../../API/api';
+import api from '../../API/api';
+import genericService from '../../API/generic/genericservice';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -243,7 +244,7 @@ const Dashboard = ({ children }) => {
 
       if (alive && payload.fullname) setFullName(payload.fullname);
 
-      const fyList = await getFiscalYearsApi();
+      const fyList = await genericService.getFiscalYears();
       if (alive && fyList.length) setFiscalYear(fyList[0].FiscalYear);
 
       const sysUserId = payload.id;

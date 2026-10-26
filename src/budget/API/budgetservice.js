@@ -1,6 +1,4 @@
-import api, { getFiscalYearsApi } from '../../API/api';
-
-export { getFiscalYearsApi };
+import api from '../../API/api';
 
 export const getStoredUserId = () => {
   try {
@@ -19,29 +17,6 @@ export const getStoredUserId = () => {
     }
   } catch {}
   return null;
-};
-
-export const getDepartmentsApi = async () => {
-  try {
-    const res = await api.post('/list/getGenericList', { FilterType: 'Department' });
-    return (res.data?.data || []).map((d) => ({
-      Value: d.Value,
-      Label: d.Label,
-      DepartmentId: d.Value,
-      DepartmentName: d.Label,
-    }));
-  } catch {
-    return [];
-  }
-};
-
-export const getStaticDataApi = async (module) => {
-  try {
-    const res = await api.post('/list/getGenericList', { FilterType: 'StaticData', module: module || null });
-    return res.data?.data || [];
-  } catch {
-    return [];
-  }
 };
 
 export const getBudgetHeadingsApi = async (fiscalYear) => {

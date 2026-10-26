@@ -27,10 +27,8 @@ import {
   createCorrespondenceApi,
   batchCreateOutgoingApi,
   getCorrespondenceApi,
-  getDepartmentsApi,
-  getUsersApi,
-  getVendorsApi,
 } from '../API/correspondenceservice';
+import genericService from '../../API/generic/genericservice';
 
 const { Option } = Select;
 
@@ -66,9 +64,9 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
     const fetchDropdowns = async () => {
       try {
         const [deptList, userList, vendorList] = await Promise.all([
-          getDepartmentsApi(),
-          getUsersApi(),
-          getVendorsApi(),
+          genericService.getDepartments(),
+          genericService.getUsers(),
+          genericService.getVendors(),
         ]);
         if (!isMounted) return;
 
@@ -428,6 +426,8 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
             {isIncoming ? 'New Incoming Entry' : 'Create Outgoing Correspondence'}
           </h1>
         </div>
+
+
 
         <Button
           type="text"
