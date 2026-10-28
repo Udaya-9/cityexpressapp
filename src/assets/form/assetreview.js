@@ -587,7 +587,7 @@ const AssetReview = () => {
                             autoComplete="off"
                         >
                             <Row gutter={[24, 16]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Asset Code"
                                         name="assetCode"
@@ -596,7 +596,7 @@ const AssetReview = () => {
                                         <Input placeholder="Enter asset code" size="large" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Invoice No"
                                         name="invoiceNo"
@@ -605,7 +605,7 @@ const AssetReview = () => {
                                         <Input placeholder="Enter invoice number" size="large" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Date of Purchase"
                                         name="purchaseDate"
@@ -617,7 +617,7 @@ const AssetReview = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Product"
                                         name="product"
@@ -626,7 +626,7 @@ const AssetReview = () => {
                                         <Input placeholder="Enter product name" size="large" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Supplier"
                                         name="supplier"
@@ -635,7 +635,7 @@ const AssetReview = () => {
                                         <Input placeholder="Enter supplier name" size="large" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Purchase Code"
                                         name="purchaseCode"
@@ -647,7 +647,7 @@ const AssetReview = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Deemed Cost"
                                         name="deemedCost"
@@ -663,7 +663,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Brand"
                                         name="brand"
@@ -671,7 +671,7 @@ const AssetReview = () => {
                                         <Input placeholder="Enter brand" size="large" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Model No."
                                         name="modelNo"
@@ -682,7 +682,7 @@ const AssetReview = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Status"
                                         name="status"
@@ -697,7 +697,7 @@ const AssetReview = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Depreciation Rate (%)"
                                         name="depreciationRate"
@@ -712,7 +712,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Total Depreciation"
                                         name="totalDepreciation"
@@ -758,7 +758,7 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={10}>
+                                <Col xs={24} sm={12} lg={10}>
                                     <Form.Item label="Attribute Name">
                                         <Input
                                             placeholder="Enter attribute name"
@@ -767,7 +767,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={10}>
+                                <Col xs={24} sm={12} lg={10}>
                                     <Form.Item label="Attribute Value">
                                         <Input
                                             placeholder="Enter attribute value"
@@ -776,7 +776,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<PlusOutlined />} onClick={addAttribute}>
                                         Add
                                     </Button>
@@ -784,7 +784,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={attributeColumns}
                             dataSource={attributes}
                             rowKey="key"
@@ -806,7 +806,7 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Assurance On">
                                         <Input
                                             placeholder="e.g., Warranty"
@@ -815,7 +815,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Assurance">
                                         <Input
                                             placeholder="e.g., Guarantee"
@@ -824,7 +824,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={5}>
+                                <Col xs={24} sm={12} lg={5}>
                                     <Form.Item label="Period (Months)">
                                         <InputNumber
                                             style={{ width: "100%" }}
@@ -835,7 +835,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={3} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={3} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<PlusOutlined />} onClick={addAssurance}>
                                         Add
                                     </Button>
@@ -843,7 +843,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={assuranceColumns}
                             dataSource={assurances}
                             rowKey="key"
@@ -865,7 +865,7 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Location">
                                         <Select
                                             placeholder="Select location"
@@ -879,7 +879,7 @@ const AssetReview = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Form.Item label="Department">
                                         <Select
                                             placeholder="Select department"
@@ -893,7 +893,7 @@ const AssetReview = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Form.Item label="User">
                                         <Select
                                             placeholder="Select user"
@@ -907,14 +907,14 @@ const AssetReview = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<PlusOutlined />} onClick={addLocation}>
                                         Add
                                     </Button>
                                 </Col>
                             </Row>
                             <Row gutter={[16, 8]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item label="Transfer Date">
                                         <DatePicker
                                             style={{ width: "100%" }}
@@ -922,7 +922,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item label="Description">
                                         <Input
                                             placeholder="Enter description"
@@ -933,7 +933,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={locationColumns}
                             dataSource={locations}
                             rowKey="key"
@@ -955,7 +955,7 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Form.Item label="Disposal Method">
                                         <Select
                                             placeholder="Select method"
@@ -969,7 +969,7 @@ const AssetReview = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Form.Item label="Disposal Date">
                                         <DatePicker
                                             style={{ width: "100%" }}
@@ -977,7 +977,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Form.Item label="Disposal Value">
                                         <InputNumber
                                             style={{ width: "100%" }}
@@ -987,7 +987,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={6} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={6} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<PlusOutlined />} onClick={addDisposal}>
                                         Add
                                     </Button>
@@ -1005,7 +1005,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={disposalColumns}
                             dataSource={disposals}
                             rowKey="key"
@@ -1027,7 +1027,7 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Invoice Date">
                                         <DatePicker
                                             style={{ width: "100%" }}
@@ -1035,7 +1035,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Invoice No.">
                                         <Input
                                             placeholder="Enter invoice number"
@@ -1043,7 +1043,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item label="Transaction Amount">
                                         <InputNumber
                                             style={{ width: "100%" }}
@@ -1055,7 +1055,7 @@ const AssetReview = () => {
                                 </Col>
                             </Row>
                             <Row gutter={[16, 8]}>
-                                <Col span={20}>
+                                <Col xs={24} lg={20}>
                                     <Form.Item label="Remarks">
                                         <Input
                                             placeholder="Enter remarks"
@@ -1063,7 +1063,7 @@ const AssetReview = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={4} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<SaveOutlined />} onClick={addAdditionalAsset}>
                                         Save
                                     </Button>
@@ -1071,7 +1071,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={additionalAssetColumns}
                             dataSource={additionalAssets}
                             rowKey="key"
@@ -1114,12 +1114,12 @@ const AssetReview = () => {
                     >
                         <Card size="small" style={{ marginBottom: 16 }}>
                             <Row gutter={[16, 8]}>
-                                <Col span={16}>
+                                <Col xs={24} lg={16}>
                                     <Upload {...uploadProps}>
                                         <Button icon={<UploadOutlined />}>Select File</Button>
                                     </Upload>
                                 </Col>
-                                <Col span={8} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
+                                <Col xs={24} sm={12} lg={8} style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
                                     <Button type="primary" icon={<CloudUploadOutlined />}>
                                         Upload
                                     </Button>
@@ -1127,7 +1127,7 @@ const AssetReview = () => {
                             </Row>
                         </Card>
 
-                        <Table
+                        <Table scroll={{ x: 'max-content' }}
                             columns={uploadColumns}
                             dataSource={uploads}
                             rowKey="key"

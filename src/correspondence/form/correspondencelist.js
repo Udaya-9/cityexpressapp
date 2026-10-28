@@ -895,23 +895,23 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Card size="small" style={{ background: '#f8fafc', borderColor: C.border }}>
               <Row gutter={[16, 12]}>
-                <Col span={12}>
+                <Col xs={24} sm={12} lg={12}>
                   <Text type="secondary" style={{ fontSize: 11 }}>REFERENCE ID</Text>
                   <div style={{ fontWeight: 700, color: '#1a73e8', fontSize: 15 }}>
                     {selectedRecord.referenceId}
                   </div>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12} lg={12}>
                   <Text type="secondary" style={{ fontSize: 11 }}>FISCAL YEAR</Text>
                   <div style={{ fontWeight: 600 }}>{selectedRecord.fiscalYear}</div>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12} lg={12}>
                   <Text type="secondary" style={{ fontSize: 11 }}>DATE</Text>
                   <div style={{ fontWeight: 600, color: C.text }}>
                     {selectedRecord.createdDate || selectedRecord.receivedDate || '—'}
                   </div>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12} lg={12}>
                   <Text type="secondary" style={{ fontSize: 11 }}>TYPE</Text>
                   <div>
                     <Tag color={selectedRecord.type === 'outgoing' ? 'purple' : 'blue'}>
@@ -937,7 +937,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             <Divider style={{ margin: '8px 0' }} />
 
             <Row gutter={[16, 12]}>
-              <Col span={12}>
+              <Col xs={24} sm={12} lg={12}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>
                   {selectedRecord.type === 'outgoing' ? 'CREATED BY' : 'SENDER / FROM'}
                 </Text>
@@ -952,7 +952,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                     : (selectedRecord.fromOrg || selectedRecord.vendorName || '')}
                 </div>
               </Col>
-              <Col span={12}>
+              <Col xs={24} sm={12} lg={12}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>DEPARTMENT</Text>
                 <div style={{ fontWeight: 600, color: C.text, marginTop: 2 }}>
                   {selectedRecord.department || selectedRecord.forwardedToDept || '—'}
@@ -963,7 +963,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
             <Divider style={{ margin: '8px 0' }} />
 
             <Row gutter={[16, 12]}>
-              <Col span={12}>
+              <Col xs={24} sm={12} lg={12}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>HANDOVER STATUS</Text>
                 <div style={{ marginTop: 4 }}>
                   <Tag color={selectedRecord.handoverStatus === 'ACKNOWLEDGED' ? 'green' : 'gold'}>
@@ -976,7 +976,7 @@ const CorrespondenceList = ({ type = 'incoming' }) => {
                   </div>
                 )}
               </Col>
-              <Col span={12}>
+              <Col xs={24} sm={12} lg={12}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>REMARKS</Text>
                 <div style={{ fontSize: 13, color: C.text, marginTop: 4 }}>
                   {selectedRecord.remarks || '—'}

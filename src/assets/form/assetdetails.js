@@ -165,7 +165,7 @@ const AssetDetail = () => {
                 }
             >
                 <Row gutter={24}>
-                    <Col span={16}>
+                    <Col xs={24} lg={16}>
                         <Descriptions 
                             title="Product Information" 
                             bordered 
@@ -203,28 +203,28 @@ const AssetDetail = () => {
 
                         <Card title="Stock Level Information" size="small">
                             <Row gutter={16}>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Statistic 
                                         title="Purchased Qty" 
                                         value={asset.purchasedQty}
                                         prefix="📦"
                                     />
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Statistic 
                                         title="Remaining Qty" 
                                         value={asset.remainingQty}
                                         valueStyle={{ color: asset.remainingQty < 10 ? "#cf1322" : "#3f8600" }}
                                     />
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Statistic 
                                         title="Consumed Qty" 
                                         value={asset.consumedQty}
                                         prefix="⚡"
                                     />
                                 </Col>
-                                <Col span={6}>
+                                <Col xs={24} sm={12} lg={6}>
                                     <Statistic 
                                         title="Status" 
                                         value={status.label}
@@ -249,7 +249,7 @@ const AssetDetail = () => {
                         </Card>
                     </Col>
 
-                    <Col span={8}>
+                    <Col xs={24} sm={12} lg={8}>
                         <Card title="Financial Summary" size="small">
                             <Descriptions column={1} size="small">
                                 <Descriptions.Item label="Rate">
@@ -284,7 +284,7 @@ const AssetDetail = () => {
                 <Divider />
 
                 <Card title="Transaction History" size="small">
-                    <Table
+                    <Table scroll={{ x: 'max-content' }}
                         columns={transactionColumns}
                         dataSource={transactionData}
                         rowKey="key"

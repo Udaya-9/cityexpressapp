@@ -543,7 +543,7 @@ const NewCorrespondenceEntry = ({ type = 'incoming', onBack, onSuccess }) => {
               </span>
             </div>
 
-            <Table
+            <Table scroll={{ x: 'max-content' }}
               dataSource={generatedList}
               columns={outgoingColumns}
               rowKey={(r, idx) => r.key || r.referenceId || idx}

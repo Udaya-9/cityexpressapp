@@ -877,7 +877,7 @@ const AssetList = () => {
             >
                 <Form form={form} layout="vertical">
                     <Row gutter={16}>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="Fiscal Year" name="fiscalYear">
                                 <Select placeholder="Select Fiscal Year" allowClear>
                                     <Option value="FA-2082/83">FA-2082/83</Option>
@@ -886,26 +886,26 @@ const AssetList = () => {
                                 </Select>
                             </Form.Item>
                         </Col>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="Product" name="product">
                                 <Input placeholder="Search product" allowClear />
                             </Form.Item>
                         </Col>
                     </Row>
                     <Row gutter={16}>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="Location" name="location">
                                 <Input placeholder="Enter location" allowClear />
                             </Form.Item>
                         </Col>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="Asset Code" name="assetCode">
                                 <Input placeholder="Enter asset code" allowClear />
                             </Form.Item>
                         </Col>
                     </Row>
                     <Row gutter={16}>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="Department" name="department">
                                 <Select placeholder="Select Department" allowClear>
                                     <Option value="IT">IT</Option>
@@ -916,7 +916,7 @@ const AssetList = () => {
                                 </Select>
                             </Form.Item>
                         </Col>
-                        <Col span={12}>
+                        <Col xs={24} sm={12} lg={12}>
                             <Form.Item label="User" name="user">
                                 <Input placeholder="Enter user name" allowClear />
                             </Form.Item>

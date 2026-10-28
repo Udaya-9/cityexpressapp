@@ -809,7 +809,7 @@ const BudgetManagement = () => {
           >
             {isSummaryMode ? (
               summaryData.length > 0 ? (
-                <Table
+                <Table scroll={{ x: 'max-content' }}
                   dataSource={summaryData}
                   columns={summaryColumns}
                   rowKey="key"
@@ -823,7 +823,7 @@ const BudgetManagement = () => {
                 </div>
               )
             ) : budgetList.length > 0 ? (
-              <Table
+              <Table scroll={{ x: 'max-content' }}
                 dataSource={budgetList}
                 columns={listColumns}
                 rowKey={(record) => record.id || record.code}
