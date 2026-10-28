@@ -24,6 +24,7 @@ import {
 
 import api from '../../API/api';
 import genericService from '../../API/generic/genericservice';
+import { listParameterMenusApi } from '../../parametersettings/API/parametersettingservice';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -63,8 +64,17 @@ const decodeJwt = (token) => {
   }
 };
 
+const resolveIsAdmin = () => {
+  const payload = decodeJwt(localStorage.getItem('token') || '');
+  const roles = String(payload?.roles || '')
+    .toUpperCase()
+    .split(',')
+    .map((role) => role.trim());
+  return roles.includes('ALL') || roles.includes('ADMIN');
+};
+
 /* ---------- menu structure builder ---------- */
-const buildSidebarMenu = ({ showVendor }) => [
+const buildSidebarMenu = ({ showVendor, showParameterSettings }) => [
   {
     type: 'group',
     label: 'Overview',
@@ -163,7 +173,9 @@ const buildSidebarMenu = ({ showVendor }) => [
         label: 'Settings',
         children: [
           { key: 'users', label: 'Users' },
-          { key: 'parameter-settings', label: 'Parameter Settings' },
+          ...(showParameterSettings
+            ? [{ key: 'parameter-settings', label: 'Parameter Settings' }]
+            : []),
         ],
       },
     ],
@@ -218,7 +230,9 @@ const Dashboard = ({ children }) => {
   const [org, setOrg] = useState(FALLBACK_ORG);
   const [fullName, setFullName] = useState(FALLBACK_USER);
   const [showVendor, setShowVendor] = useState(false);
+  const [isAdmin] = useState(resolveIsAdmin);
   const [fiscalYear, setFiscalYear] = useState(FALLBACK_FY);
+  const [parameterMenus, setParameterMenus] = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -246,6 +260,18 @@ const Dashboard = ({ children }) => {
 
       const fyList = await genericService.getFiscalYears();
       if (alive && fyList.length) setFiscalYear(fyList[0].FiscalYear);
+
+      listParameterMenusApi()
+        .then((items) => {
+          if (!alive) return;
+          const sorted = (Array.isArray(items) ? items : []).sort((a, b) =>
+            String(a.menuName || '').localeCompare(String(b.menuName || ''))
+          );
+          setParameterMenus(sorted);
+        })
+        .catch(() => {
+          if (alive) setParameterMenus([]);
+        });
 
       const sysUserId = payload.id;
       if (!sysUserId) return;
@@ -283,8 +309,8 @@ const Dashboard = ({ children }) => {
   }, [navigate]);
 
   const sidebarMenuItems = useMemo(
-    () => buildSidebarMenu({ showVendor }),
-    [showVendor]
+    () => buildSidebarMenu({ showVendor, showParameterSettings: isAdmin }),
+    [showVendor, isAdmin]
   );
 
   const { PARENT_OF, LABEL_OF } = useMemo(() => {
@@ -304,7 +330,13 @@ const Dashboard = ({ children }) => {
 
   const isExpanded = !collapsed || isHovered;
 
+  const activeParameterMenu = useMemo(
+    () => parameterMenus.find((item) => pathname === `/parameter-menu/${item.parameterId}`),
+    [parameterMenus, pathname]
+  );
+
   const selectedKey = useMemo(() => {
+    if (pathname.startsWith('/parameter-menu/')) return '';
     let best = 'dashboard';
     let bestLen = -1;
     Object.entries(ROUTES).forEach(([key, path]) => {
@@ -349,6 +381,10 @@ const Dashboard = ({ children }) => {
           trigger={null}
           collapsible
           collapsed={!isExpanded}
+          breakpoint="lg"
+          onBreakpoint={(broken) => {
+            if (broken) setCollapsed(true);
+          }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           width={SIDER_W}
@@ -451,25 +487,35 @@ const Dashboard = ({ children }) => {
             </div>
           </Header>
 
+          {/* ================= PARAMETER MENU BAR ================= */}
+          {parameterMenus.length > 0 && (
+            <div className="ce-param-bar">
+              <Menu
+                mode="horizontal"
+                theme="dark"
+                className="ce-param-menu"
+                selectedKeys={activeParameterMenu ? [activeParameterMenu.parameterId] : []}
+                items={parameterMenus.map((item) => ({
+                  key: item.parameterId,
+                  label: item.menuName,
+                }))}
+                onClick={({ key }) => navigate(`/parameter-menu/${key}`)}
+                style={{ background: 'transparent', borderBottom: 'none', minWidth: 0 }}
+              />
+            </div>
+          )}
+
           {/* ================= PAGE TITLE STRIP ================= */}
-          <div className="ce-page-strip">
-            <Text className="ce-page-title">{LABEL_OF[selectedKey] || 'Dashboard'}</Text>
-          </div>
+          {!activeParameterMenu && (
+            <div className="ce-page-strip">
+              <Text className="ce-page-title">
+                {LABEL_OF[selectedKey] || 'Dashboard'}
+              </Text>
+            </div>
+          )}
 
           {/* ================= CONTENT ================= */}
-          <Content
-            style={{
-              margin: '0 16px 16px',
-              padding: 24,
-              minHeight: 280,
-              background: '#ffffff',
-              borderRadius: 14,
-              boxShadow:
-                '0 16px 32px -16px rgba(1, 40, 90, 0.12), 0 2px 8px rgba(0, 0, 0, 0.02)',
-              border: '1px solid #eef2f8',
-              overflow: 'auto',
-            }}
-          >
+          <Content className="ce-content" style={{ minHeight: 280 }}>
             {children}
           </Content>
         </Layout>
@@ -477,7 +523,7 @@ const Dashboard = ({ children }) => {
         {/* ================= STYLES ================= */}
         <style>{`
           .ce-sider *, .ce-menu *, .ce-icon-btn, .ce-user,
-          .ce-fy, .ant-dropdown-menu-item, .ant-layout-sider {
+          .ce-fy, .ce-param-menu *, .ant-dropdown-menu-item, .ant-layout-sider {
             transition: none !important;
             animation: none !important;
           }
@@ -628,6 +674,39 @@ const Dashboard = ({ children }) => {
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
 
+          /* ----- parameter menu bar ----- */
+          .ce-param-bar {
+            position: sticky; top: ${HEADER_H}px; z-index: 80;
+            padding: 0 10px;
+            background: linear-gradient(90deg, ${C.sideBottom} 0%, ${C.sideTop} 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 2px 10px rgba(1, 40, 90, 0.16);
+          }
+          .ce-param-menu.ant-menu-dark {
+            height: 38px; line-height: 38px;
+            font-size: 12.5px; font-weight: 500;
+          }
+          .ce-param-menu.ant-menu-dark .ant-menu-item {
+            height: 38px; line-height: 38px;
+            margin: 0; padding: 0 14px;
+            border-radius: 0;
+            color: rgba(255, 255, 255, 0.8);
+          }
+          .ce-param-menu.ant-menu-dark .ant-menu-item::after { display: none; }
+          .ce-param-menu.ant-menu-dark .ant-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+          }
+          .ce-param-menu.ant-menu-dark .ant-menu-item-selected {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff; font-weight: 600;
+            box-shadow: inset 0 -3px 0 ${C.accentSoft};
+          }
+          .ce-param-menu.ant-menu-dark .ant-menu-overflow-item-rest,
+          .ce-param-menu.ant-menu-dark .ant-menu-overflow-item-suffix {
+            color: #fff;
+          }
+
           /* ----- page title strip ----- */
           .ce-page-strip {
             margin: 12px 16px 8px;
@@ -640,11 +719,32 @@ const Dashboard = ({ children }) => {
             letter-spacing: 0.2px;
           }
 
+          /* ----- content shell ----- */
+          .ce-content {
+            margin: 0 16px 16px;
+            padding: 24px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 16px 32px -16px rgba(1, 40, 90, 0.12), 0 2px 8px rgba(0, 0, 0, 0.02);
+            border: 1px solid #eef2f8;
+            overflow: auto;
+          }
+
           @media (max-width: 1180px) {
             .ce-user-name { display: none; }
+            .ce-param-menu.ant-menu-dark .ant-menu-item { padding: 0 10px; }
           }
           @media (max-width: 900px) {
             .ce-fy { display: none; }
+          }
+          @media (max-width: 992px) {
+            .ce-content { margin: 0 12px 12px; padding: 16px; border-radius: 12px; }
+          }
+          @media (max-width: 576px) {
+            .ce-content { margin: 0 8px 8px; padding: 12px; border-radius: 10px; }
+            .ce-page-strip { margin: 10px 10px 6px; }
+            .ce-divider { display: none; }
+            .ce-param-bar { padding: 0 4px; }
           }
 
           /* ----- user dropdown ----- */

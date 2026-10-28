@@ -406,7 +406,7 @@ const CreateAsset = () => {
                             </Title>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Vendor List"
                                         name="vendor"
@@ -427,7 +427,7 @@ const CreateAsset = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Date of Purchase"
                                         name="purchaseDate"
@@ -446,7 +446,7 @@ const CreateAsset = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Invoice No"
                                         name="invoiceNo"
@@ -459,7 +459,7 @@ const CreateAsset = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Brand"
                                         name="brand"
@@ -534,7 +534,7 @@ const CreateAsset = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Category"
                                         name="category"
@@ -554,7 +554,7 @@ const CreateAsset = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Sub-Category"
                                         name="subCategory"
@@ -582,7 +582,7 @@ const CreateAsset = () => {
                             </Title>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Packaging"
                                         name="packaging"
@@ -601,7 +601,7 @@ const CreateAsset = () => {
                                         </Select>
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Packaging Units"
                                         name="packagingUnit"
@@ -628,7 +628,7 @@ const CreateAsset = () => {
                             </Title>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Per Package Quantity"
                                         name="perPackageQty"
@@ -647,7 +647,7 @@ const CreateAsset = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={8}>
+                                <Col xs={24} sm={12} lg={8}>
                                     <Form.Item
                                         label="Total Quantity"
                                         name="totalQty"
@@ -670,7 +670,7 @@ const CreateAsset = () => {
                             </Row>
 
                             <Row gutter={[24, 16]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Per Quantity Rate"
                                         name="perQtyRate"
@@ -692,7 +692,7 @@ const CreateAsset = () => {
                                         />
                                     </Form.Item>
                                 </Col>
-                                <Col span={12}>
+                                <Col xs={24} sm={12} lg={12}>
                                     <Form.Item
                                         label="Total Cost"
                                         name="totalCost"
@@ -726,25 +726,25 @@ const CreateAsset = () => {
                                 }}
                             >
                                 <Row gutter={[16, 8]}>
-                                    <Col span={6}>
+                                    <Col xs={24} sm={12} lg={6}>
                                         <Text type="secondary">Per Package Qty:</Text>
                                         <Text strong style={{ display: "block", fontSize: 16 }}>
                                             {form.getFieldValue("perPackageQty") || 0}
                                         </Text>
                                     </Col>
-                                    <Col span={6}>
+                                    <Col xs={24} sm={12} lg={6}>
                                         <Text type="secondary">Total Qty:</Text>
                                         <Text strong style={{ display: "block", fontSize: 16 }}>
                                             {form.getFieldValue("totalQty") || 0}
                                         </Text>
                                     </Col>
-                                    <Col span={6}>
+                                    <Col xs={24} sm={12} lg={6}>
                                         <Text type="secondary">Per Qty Rate:</Text>
                                         <Text strong style={{ display: "block", fontSize: 16 }}>
                                             Rs. {(form.getFieldValue("perQtyRate") || 0).toLocaleString()}
                                         </Text>
                                     </Col>
-                                    <Col span={6}>
+                                    <Col xs={24} sm={12} lg={6}>
                                         <Text type="secondary">Tax Applied:</Text>
                                         <Tag color={taxableType === "vat" ? "blue" : "green"} style={{ fontSize: 14 }}>
                                             {taxableType === "vat" ? "VAT (13%)" : "PAN (No Tax)"}
@@ -790,7 +790,7 @@ const CreateAsset = () => {
                     style={cardStyles}
                     bodyStyle={{ padding: "16px 24px" }}
                 >
-                    <Table
+                    <Table scroll={{ x: 'max-content' }}
                         columns={approvalColumns}
                         dataSource={approvalData}
                         rowKey="key"

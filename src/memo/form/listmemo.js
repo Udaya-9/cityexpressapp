@@ -271,7 +271,7 @@ const MemoList = ({ mode = "inbox" }) => {
             </div>
 
             {/* Memo Records Table */}
-            <Table
+            <Table scroll={{ x: 'max-content' }}
                 loading={loading}
                 columns={columns}
                 dataSource={filteredData}
