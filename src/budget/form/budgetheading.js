@@ -931,7 +931,7 @@ const BudgetHeading = () => {
                   )}
 
                   {filteredHeadings.length > 0 ? (
-                    <Table
+                    <Table scroll={{ x: 'max-content' }}
                       dataSource={filteredHeadings}
                       columns={headingColumns}
                       rowKey={(record) => record.id || record.code}
@@ -1076,7 +1076,7 @@ const BudgetHeading = () => {
                   )}
 
                   {filteredSubheadings.length > 0 ? (
-                    <Table
+                    <Table scroll={{ x: 'max-content' }}
                       dataSource={filteredSubheadings}
                       columns={subheadingColumns}
                       rowKey={(record) => record.id || record.code}

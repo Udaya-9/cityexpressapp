@@ -478,7 +478,7 @@ const BudgetReport = () => {
             <Empty description="No budget records found for the selected filters." />
           </div>
         ) : isSummaryMode ? (
-          <Table
+          <Table scroll={{ x: 'max-content' }}
             dataSource={summaryData}
             columns={summaryColumns}
             rowKey="key"
@@ -513,7 +513,7 @@ const BudgetReport = () => {
             }}
           />
         ) : (
-          <Table
+          <Table scroll={{ x: 'max-content' }}
             dataSource={rows}
             columns={detailColumns}
             rowKey="_key"

@@ -93,7 +93,7 @@ const CreateVendor = () => {
                 initialValues={{ isActive: true, panVatType: "PAN" }}
             >
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Vendor Name"
                             name="vendorName"
@@ -105,7 +105,7 @@ const CreateVendor = () => {
                             <Input placeholder="Enter vendor name" prefix={<ShopOutlined />} />
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Contact Person"
                             name="contactPerson"
@@ -120,7 +120,7 @@ const CreateVendor = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Address"
                             name="address"
@@ -129,7 +129,7 @@ const CreateVendor = () => {
                             <Input placeholder="Enter address" prefix={<HomeOutlined />} />
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Mobile No"
                             name="mobileNo"
@@ -144,12 +144,12 @@ const CreateVendor = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item label="Phone No" name="phoneNo">
                             <Input placeholder="Enter phone number" prefix={<PhoneOutlined />} />
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Email Address"
                             name="email"
@@ -164,7 +164,7 @@ const CreateVendor = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="PAN/VAT Type"
                             name="panVatType"
@@ -176,7 +176,7 @@ const CreateVendor = () => {
                             </Select>
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="PAN/VAT Number"
                             name="panVat"
@@ -191,7 +191,7 @@ const CreateVendor = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Registration No"
                             name="registrationNo"

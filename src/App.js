@@ -10,6 +10,8 @@ import Asset from "./assets/form";
 import Memo from "./memo/form";
 import Correspondence from "./correspondence/form";
 import Budget from "./budget/form";
+import ParameterSettings from "./parametersettings/form/parametersettings";
+import ParameterMenu from "./parametersettings/form/parameterrunner";
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
         <Route path="/memo/*" element={<Dashboard><Memo /></Dashboard>} />
         <Route path="/correspondence/*" element={<Dashboard><Correspondence /></Dashboard>} />
         <Route path="/budget/*" element={<Dashboard><Budget /></Dashboard>} />
+        <Route path="/parameter-settings" element={<Dashboard><ParameterSettings /></Dashboard>} />
+        <Route path="/parameter-menu/:parameterId" element={<Dashboard><ParameterMenu /></Dashboard>} />
       </Routes>
     </BrowserRouter>
   );

@@ -67,7 +67,7 @@ const CreateUser = () => {
                 }}
             >
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="User Name"
                             name="userName"
@@ -79,7 +79,7 @@ const CreateUser = () => {
                             <Input placeholder="Enter username" prefix={<UserOutlined />} />
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Full Name"
                             name="fullName"
@@ -91,7 +91,7 @@ const CreateUser = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Organization"
                             name="organization"
@@ -104,7 +104,7 @@ const CreateUser = () => {
                             </Select>
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Department"
                             name="department"
@@ -121,7 +121,7 @@ const CreateUser = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Unit"
                             name="unit"
@@ -135,7 +135,7 @@ const CreateUser = () => {
                             </Select>
                         </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="User Roles"
                             name="roles"
@@ -152,7 +152,7 @@ const CreateUser = () => {
                 </Row>
 
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Account Status"
                             name="accessOnline"
