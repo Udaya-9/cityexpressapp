@@ -88,22 +88,7 @@ const CreateUser = () => {
                             <Input placeholder="Enter full name" />
                         </Form.Item>
                     </Col>
-                </Row>
-
-                <Row gutter={24}>
-                    <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Organization"
-                            name="organization"
-                            rules={[{ required: true, message: "Please select organization" }]}
-                        >
-                            <Select placeholder="Select organization">
-                                <Option value="org1">Organization 1</Option>
-                                <Option value="org2">Organization 2</Option>
-                                <Option value="org3">Organization 3</Option>
-                            </Select>
-                        </Form.Item>
-                    </Col>
+                                   
                     <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Department"
@@ -111,16 +96,11 @@ const CreateUser = () => {
                             rules={[{ required: true, message: "Please select department" }]}
                         >
                             <Select placeholder="Select department">
-                                <Option value="it">IT</Option>
-                                <Option value="hr">HR</Option>
-                                <Option value="finance">Finance</Option>
-                                <Option value="marketing">Marketing</Option>
+                               
                             </Select>
                         </Form.Item>
                     </Col>
-                </Row>
-
-                <Row gutter={24}>
+               
                     <Col xs={24} sm={12} lg={12}>
                         <Form.Item
                             label="Unit"
@@ -128,10 +108,7 @@ const CreateUser = () => {
                             rules={[{ required: true, message: "Please select unit" }]}
                         >
                             <Select placeholder="Select unit">
-                                <Option value="development">Development</Option>
-                                <Option value="design">Design</Option>
-                                <Option value="operations">Operations</Option>
-                                <Option value="support">Support</Option>
+                               
                             </Select>
                         </Form.Item>
                     </Col>
@@ -142,32 +119,13 @@ const CreateUser = () => {
                             rules={[{ required: true, message: "Please select at least one role" }]}
                         >
                             <Select mode="multiple" placeholder="Select roles">
-                                <Option value="admin">Admin</Option>
-                                <Option value="manager">Manager</Option>
-                                <Option value="editor">Editor</Option>
-                                <Option value="viewer">Viewer</Option>
+                              
                             </Select>
                         </Form.Item>
                     </Col>
                 </Row>
 
-                <Row gutter={24}>
-                    <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Account Status"
-                            name="accessOnline"
-                            valuePropName="checked"
-                        >
-                            <Space size="middle">
-                                <Switch
-                                    checkedChildren="Active"
-                                    unCheckedChildren="Inactive"
-                                />
-                                <Text type="secondary">Allow user to access the system online</Text>
-                            </Space>
-                        </Form.Item>
-                    </Col>
-                </Row>
+                
 
                 <Divider />
 
