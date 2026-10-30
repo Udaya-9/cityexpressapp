@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
   Col,
+  Collapse,
   Empty,
   Form,
   Input,
@@ -86,6 +87,39 @@ const normalizeRoleOptions = (items) =>
     })
     .filter((option) => option.value);
 
+const GUID_LOOKUPS = {
+  department: 'Department',
+  departmentid: 'Department',
+  roleid: 'RoleTable',
+  rolekey: 'RoleTable',
+  unitid: 'UnitTable',
+  userid: 'User',
+  vendorid: 'Vendor',
+};
+
+const buildImportedField = (parameter) => {
+  const isGuid = String(parameter.sqlType).toLowerCase() === 'uniqueidentifier';
+  const lookup = isGuid ? GUID_LOOKUPS[parameter.fieldName.toLowerCase()] : '';
+  return {
+    fieldName: parameter.fieldName,
+    sqlType: parameter.sqlType,
+    fieldType: isGuid ? (lookup ? 'select' : 'textbox') : parameter.fieldType,
+    labelName: parameter.labelName || parameter.fieldName,
+    isRequired: parameter.isRequired !== false,
+    options: lookup || '',
+    placeholder: '',
+    inForm: true,
+  };
+};
+
+const withGuidLookup = (field) => {
+  const lookup = GUID_LOOKUPS[String(field.fieldName || '').toLowerCase()];
+  if (!lookup || String(field.sqlType || '').toLowerCase() !== 'uniqueidentifier') return field;
+  if (String(field.options || '').trim()) return field;
+  if (field.fieldType !== 'textbox' && field.fieldType !== 'select') return field;
+  return { ...field, fieldType: 'select', options: lookup };
+};
+
 const mergeFields = (parameters, current) => {
   const currentByName = new Map(
     current.map((field) => [field.fieldName.toLowerCase(), field])
@@ -94,23 +128,14 @@ const mergeFields = (parameters, current) => {
   return (parameters || []).map((parameter) => {
     const existing = currentByName.get(parameter.fieldName.toLowerCase());
     if (existing) {
-      return {
+      return withGuidLookup({
         ...existing,
         fieldName: parameter.fieldName,
         sqlType: parameter.sqlType,
         inForm: existing.inForm !== false,
-      };
+      });
     }
-    return {
-      fieldName: parameter.fieldName,
-      sqlType: parameter.sqlType,
-      fieldType: parameter.fieldType,
-      labelName: parameter.labelName || parameter.fieldName,
-      isRequired: parameter.isRequired !== false,
-      options: '',
-      placeholder: '',
-      inForm: true,
-    };
+    return buildImportedField(parameter);
   });
 };
 
@@ -118,25 +143,18 @@ const mergeLoadedFields = (parameters, savedFields) => {
   const parameterByName = new Map(
     (parameters || []).map((parameter) => [parameter.fieldName.toLowerCase(), parameter])
   );
-  const visible = savedFields.map((field) => ({
-    ...field,
-    sqlType: parameterByName.get(field.fieldName.toLowerCase())?.sqlType,
-    inForm: true,
-  }));
+  const visible = savedFields.map((field) =>
+    withGuidLookup({
+      ...field,
+      sqlType: parameterByName.get(field.fieldName.toLowerCase())?.sqlType,
+      inForm: true,
+    })
+  );
   const visibleNames = new Set(visible.map((field) => field.fieldName.toLowerCase()));
 
   const hidden = (parameters || [])
     .filter((parameter) => !visibleNames.has(parameter.fieldName.toLowerCase()))
-    .map((parameter) => ({
-      fieldName: parameter.fieldName,
-      sqlType: parameter.sqlType,
-      fieldType: parameter.fieldType,
-      labelName: parameter.labelName || parameter.fieldName,
-      isRequired: parameter.isRequired !== false,
-      options: '',
-      placeholder: '',
-      inForm: false,
-    }));
+    .map((parameter) => ({ ...buildImportedField(parameter), inForm: false }));
 
   return [...visible, ...hidden];
 };
@@ -166,6 +184,7 @@ const ParameterSettings = () => {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fields, setFields] = useState([]);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [parametersLoading, setParametersLoading] = useState(false);
   const [roleFallback, setRoleFallback] = useState(null);
   const [form] = Form.useForm();
@@ -231,6 +250,7 @@ const ParameterSettings = () => {
 
     form.resetFields();
     setFields([]);
+    setAdvancedOpen(false);
     setRoleFallback(null);
     setEditingId(record?.parameterId || null);
     setEditorOpen(true);
@@ -303,6 +323,14 @@ const ParameterSettings = () => {
     try {
       const parameters = await getProcedureParametersApi(procedureName);
       setFields((current) => mergeFields(parameters, current));
+      const defaultName =
+        procedureName.replace(/^sProc[_-]?/i, '').replace(/[_-]+/g, ' ').trim() || procedureName;
+      if (!String(form.getFieldValue('paramterName') || '').trim()) {
+        form.setFieldValue('paramterName', defaultName);
+      }
+      if (!String(form.getFieldValue('menuName') || '').trim()) {
+        form.setFieldValue('menuName', defaultName);
+      }
     } catch (err) {
       setFields([]);
       message.error(
@@ -332,7 +360,8 @@ const ParameterSettings = () => {
   const handleSave = async () => {
     let values;
     try {
-      values = await form.validateFields();
+      const validatedValues = await form.validateFields();
+      values = { ...form.getFieldsValue(true), ...validatedValues };
     } catch {
       return;
     }
@@ -345,6 +374,7 @@ const ParameterSettings = () => {
         !String(field.options || '').trim()
     );
     if (invalid) {
+      setAdvancedOpen(true);
       message.warning(
         `Options are required for "${invalid.labelName || invalid.fieldName}"`
       );
@@ -355,13 +385,13 @@ const ParameterSettings = () => {
     try {
       await saveParameterSettingApi({
         paramterId: editingId || undefined,
-        paramterName: values.paramterName.trim(),
+        paramterName: (values.paramterName || values.menuName).trim(),
         procedureName: values.procedureName,
         roleKey: values.roleKey || undefined,
         menuName: (values.menuName || '').trim(),
-        canCreate: values.canCreate !== false,
-        canUpdate: values.canUpdate !== false,
-        canDelete: values.canDelete !== false,
+        canCreate: values.canCreate === true,
+        canUpdate: values.canUpdate === true,
+        canDelete: values.canDelete === true,
         fields: fieldsToSave.map((field) => ({
           fieldName: field.fieldName,
           fieldType: field.fieldType,
@@ -662,7 +692,7 @@ const ParameterSettings = () => {
         }}
       >
         <div style={{ fontSize: 12, color: C.muted }}>
-          Configure stored procedure parameters and execute business processes.
+          Create list and data-entry screens from stored procedures.
         </div>
         <Button
           type="primary"
@@ -745,18 +775,9 @@ const ParameterSettings = () => {
             form={form}
             layout="vertical"
             style={{ marginTop: 12 }}
-            initialValues={{ canCreate: true, canUpdate: true, canDelete: true }}
+            initialValues={{ canCreate: false, canUpdate: false, canDelete: false }}
           >
             <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  name="paramterName"
-                  label="Parameter Name"
-                  rules={[{ required: true, message: 'Parameter name is required' }]}
-                >
-                  <Input maxLength={100} placeholder="e.g. Correspondence Report" />
-                </Form.Item>
-              </Col>
               <Col xs={24} md={10}>
                 <Form.Item
                   name="procedureName"
@@ -773,6 +794,15 @@ const ParameterSettings = () => {
                   />
                 </Form.Item>
               </Col>
+              <Col xs={24} md={8}>
+                <Form.Item
+                  name="menuName"
+                  label="Menu Name"
+                  rules={[{ required: true, message: 'Menu name is required' }]}
+                >
+                  <Input maxLength={100} placeholder="e.g. Correspondence Report" />
+                </Form.Item>
+              </Col>
               <Col xs={24} md={6}>
                 <Form.Item name="roleKey" label="Role">
                   <Select
@@ -785,86 +815,118 @@ const ParameterSettings = () => {
               </Col>
             </Row>
 
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item
-                  name="menuName"
-                  label="Menu Name"
-                  rules={[{ required: true, message: 'Menu name is required' }]}
-                >
-                  <Input maxLength={100} placeholder="e.g. Correspondence Report" />
-                </Form.Item>
-              </Col>
-              <Col xs={12} md={4}>
-                <Form.Item name="canCreate" label="Grid create" valuePropName="checked">
-                  <Switch size="small" />
-                </Form.Item>
-              </Col>
-              <Col xs={12} md={4}>
-                <Form.Item name="canUpdate" label="Grid update" valuePropName="checked">
-                  <Switch size="small" />
-                </Form.Item>
-              </Col>
-              <Col xs={12} md={4}>
-                <Form.Item name="canDelete" label="Grid delete" valuePropName="checked">
-                  <Switch size="small" />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                margin: '4px 0 8px',
-              }}
-            >
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#3b556e' }}>
-                PROCEDURE PARAMETERS
-              </span>
-              <span style={{ fontSize: 11, color: C.muted }}>
-                {fields.filter((field) => field.inForm !== false).length} in form
-              </span>
+            <div style={{ margin: '-4px 0 12px', fontSize: 12, color: C.muted }}>
+              Parameters are added automatically. New screens are read-only unless write access is
+              enabled in Advanced settings.
             </div>
 
-            <Table
-              columns={fieldColumns}
-              dataSource={fields}
-              rowKey="fieldName"
-              loading={parametersLoading}
-              pagination={false}
-              size="small"
-              scroll={{ x: 1200 }}
-              locale={{
-                emptyText: (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Select a procedure to load its parameters"
-                  />
-                ),
-              }}
+            <Collapse
+              ghost
+              activeKey={advancedOpen ? ['advanced'] : []}
+              onChange={(keys) => setAdvancedOpen(keys.includes('advanced'))}
+              items={[
+                {
+                  key: 'advanced',
+                  label: 'Advanced settings',
+                  children: (
+                    <>
+                      <Row gutter={16}>
+                        <Col xs={24} md={8}>
+                          <Form.Item
+                            name="paramterName"
+                            label="Internal Name"
+                            tooltip="Shown in this configuration list. Defaults to the menu name."
+                          >
+                            <Input maxLength={100} placeholder="Defaults to menu name" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={12} md={4}>
+                          <Form.Item
+                            name="canCreate"
+                            label="Allow create"
+                            valuePropName="checked"
+                          >
+                            <Switch size="small" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={12} md={4}>
+                          <Form.Item
+                            name="canUpdate"
+                            label="Allow update"
+                            valuePropName="checked"
+                          >
+                            <Switch size="small" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={12} md={4}>
+                          <Form.Item
+                            name="canDelete"
+                            label="Allow delete"
+                            valuePropName="checked"
+                          >
+                            <Switch size="small" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          margin: '4px 0 8px',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#3b556e' }}>
+                          PROCEDURE PARAMETERS
+                        </span>
+                        <span style={{ fontSize: 11, color: C.muted }}>
+                          {fields.filter((field) => field.inForm !== false).length} in form
+                        </span>
+                      </div>
+
+                      <Table
+                        columns={fieldColumns}
+                        dataSource={fields}
+                        rowKey="fieldName"
+                        loading={parametersLoading}
+                        pagination={false}
+                        size="small"
+                        scroll={{ x: 1200 }}
+                        locale={{
+                          emptyText: (
+                            <Empty
+                              image={Empty.PRESENTED_IMAGE_SIMPLE}
+                              description="Select a procedure to load its parameters"
+                            />
+                          ),
+                        }}
+                      />
+
+                      <div style={{ marginTop: 10, fontSize: 11, lineHeight: 1.6, color: C.muted }}>
+                        <div>
+                          Options: leave blank for a single yes/no checkbox. Use{' '}
+                          <Text code style={{ fontSize: 11 }}>
+                            Static:A,B,C
+                          </Text>{' '}
+                          for fixed choices or a list type such as Department, Vendor, UnitTable,
+                          RoleTable, User or FiscalYear.
+                        </div>
+                        <div style={{ marginTop: 4 }}>
+                          Fields switched off stay available to the procedure from the selected table
+                          row but do not appear on the generated form. Procedures that declare{' '}
+                          <Text code style={{ fontSize: 11 }}>
+                            @action
+                          </Text>{' '}
+                          get the standard list screen automatically: a = list, c = insert, u =
+                          update, d = delete.
+                        </div>
+                      </div>
+                    </>
+                  ),
+                },
+              ]}
             />
-
-            <div style={{ marginTop: 10, fontSize: 11, lineHeight: 1.6, color: C.muted }}>
-              <div>
-                Options: leave blank for a single yes/no checkbox. Use{' '}
-                <Text code style={{ fontSize: 11 }}>
-                  Static:A,B,C
-                </Text>{' '}
-                for fixed choices or a list type such as Department, Vendor, FiscalYear or
-                RoleTable.
-              </div>
-              <div style={{ marginTop: 4 }}>
-                Fields switched off stay available to the procedure from the selected table row
-                but do not appear on the generated form. Procedures that declare{' '}
-                <Text code style={{ fontSize: 11 }}>
-                  @action
-                </Text>{' '}
-                get the standard list screen automatically: a = list, c = insert, u = update, d =
-                delete.
-              </div>
-            </div>
           </Form>
         </Spin>
       </Modal>
