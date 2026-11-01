@@ -1,37 +1,70 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, Table, Button, Tag, Space, Input, Typography } from "antd";
-import {
-    PlusOutlined,
-    EditOutlined,
-    SearchOutlined,
-} from "@ant-design/icons";
+import React, { useMemo, useState, useEffect } from "react";
+import {  useNavigate } from "react-router-dom";
+import { Card, Table, Button, Tag, Space, Input, Typography, message } from "antd";
+import { PlusOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
+import { GetAllUsers_API } from "../API/User.API";
 
 const { Text } = Typography;
 
 const UserList = () => {
     const navigate = useNavigate();
     const [searchText, setSearchText] = useState("");
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
+    const fetchUsers = async () => {
+        const storedUser  = localStorage.getItem("user");
+        if (!storedUser ) {
+            message.error("ID not found");
+            return;
+        }
+        setLoading(true);
+        try {     
+             const user = JSON.parse(storedUser);
+           const apiPayload = {
+            sys_user_id: user.id  
+        };    
+             const result = await GetAllUsers_API(apiPayload);
+            if (result.success && result.data) {
+                const formattedData = result.data.map((user, index) => ({
+                    key: user.UserName || index,
+                    userName: user.UserName,
+                    fullName: user.FullName,
+                    department: user.DepartmentName,
+                    unit: user.UnitName,
+                    CreatedBy:user.CreatedBy,
+                    CreatedDate:user.CreatedDate,
+                    LastLoginDate:user.LastLoginDate,
+                    status: user.Status,
+                    roles: user.Roles,
+                }));
+                setUsers(formattedData);
+            }
+        } catch (error) {
+            console.error("Fetch Users Error:", error);
+            message.error(error?.message || "Failed to load users");
+        } finally {
+            setLoading(false);
+        }
+    };
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    // 🟢 Table Columns
     const columns = [
         {
             title: "User Name",
             dataIndex: "userName",
             key: "userName",
-            sorter: (a, b) => a.userName.localeCompare(b.userName),
+            sorter: (a, b) => (a.userName || "").localeCompare(b.userName || ""),
             render: (value) => <Text strong>{value}</Text>,
-        },
-         {
-            title: "Organization Name",
-            dataIndex: "organizationname",
-            key: "organizationname",
-            sorter: (a, b) => a.organizationname.localeCompare(b.organizationname),
         },
         {
             title: "Full Name",
             dataIndex: "fullName",
             key: "fullName",
-            sorter: (a, b) => a.fullName.localeCompare(b.fullName),
+            sorter: (a, b) => (a.fullName || "").localeCompare(b.fullName || ""),
         },
         {
             title: "Department",
@@ -44,64 +77,45 @@ const UserList = () => {
             key: "unit",
         },
         {
-            title: "User Created On",
-            dataIndex: "createdOn",
-            key: "createdOn",
-            sorter: (a, b) => new Date(a.createdOn) - new Date(b.createdOn),
+            title: "Roles",
+            dataIndex: "roles",
+            key: "roles",
         },
         {
             title: "Created By",
-            dataIndex: "createdBy",
-            key: "createdBy",
-        },
-        {
-            title: "Last Login Date",
-            dataIndex: "lastLoginDate",
-            key: "lastLoginDate",
-            sorter: (a, b) =>
-                new Date(a.lastLoginDate) - new Date(b.lastLoginDate),
+            dataIndex: "CreatedBy",
+            key: "CreatedBy",
         },
          {
-            title: "Authentication",
-            dataIndex: "Authentication",
-            key: "Authentication",
+            title: "Created Date",
+            dataIndex: "CreatedDate",
+            key: "CreatedDate",
+        },
+          {
+            title: "Last Login Date",
+            dataIndex: "LastLoginDate",
+            key: "LastLoginDate",
         },
         {
             title: "Status",
+            dataIndex: "status",
             key: "status",
             filters: [
-                { text: "Blocked", value: "blocked" },
-                { text: "Suspended", value: "suspended" },
-                { text: "Active", value: "active" },
+                { text: "Active", value: "Active" },
+                { text: "Inactive", value: "Inactive" },
             ],
-            onFilter: (value, record) => {
-                if (value === "blocked") return record.isBlocked;
-                if (value === "suspended") return record.isSuspended;
-                return !record.isBlocked && !record.isSuspended;
-            },
-            render: (_, record) => (
-                <Space size={4}>
-                    {record.isBlocked && <Tag color="red">Blocked</Tag>}
-                    {record.isSuspended && (
-                        <Tag color="orange">Suspended</Tag>
-                    )}
-                    {!record.isBlocked && !record.isSuspended && (
-                        <Tag color="success">Active</Tag>
-                    )}
-                </Space>
+            onFilter: (value, record) => record.status === value,
+            render: (status) => (
+                <Tag color={status === "Active" ? "success" : "error"}>
+                    {status}
+                </Tag>
             ),
-        },
-        {
-            title: "Access Online",
-            dataIndex: "accessOnline",  // Fixed: should match data property
-            key: "accessOnline",
-            render: (value) => value ? "Yes" : "No",  // Added render to show Yes/No
         },
         {
             title: "Action",
             key: "action",
             fixed: "right",
-            width: 140,
+            width: 100,
             render: (_, record) => (
                 <Space size={4}>
                     <Button
@@ -115,55 +129,23 @@ const UserList = () => {
         },
     ];
 
-    const data = [
-        {
-            key: 1,
-            userName: "Admin",
-            organizationname: "CEMT",
-            fullName: "Administrator",
-            department: "IT",
-            unit: "Development",
-            createdOn: "2026-08-01",
-            createdBy: "System",
-            lastLoginDate: "2026-08-15",
-               Authentication:"SuperAdmin",
-            isBlocked: false,
-            isSuspended: false,
-            accessOnline: true,  // Added this field
-        },
-        {
-            key: 2,
-            userName: "udaya.ghimire@ctxpress.com",
-                organizationname: "CEMT-JP",
-            fullName: "Uday Chandra Ghimire",
-            department: "IT",
-            unit: "Development",
-            createdOn: "2026-08-02",
-            createdBy: "kishan Bhari",
-            lastLoginDate: "2026-08-14",
-            Authentication:"Admin",
-            isBlocked: false,
-            isSuspended: false,
-            accessOnline: true,  
-        },
-    ];
-
+    // 🟢 Search फिल्टर
     const filteredData = useMemo(() => {
         const query = searchText.trim().toLowerCase();
-        if (!query) return data;
-        return data.filter((user) =>
+        if (!query) return users;
+        return users.filter((user) =>
             [
                 user.userName,
                 user.fullName,
                 user.department,
                 user.unit,
-                user.createdBy,
+                user.roles,
             ]
                 .join(" ")
                 .toLowerCase()
                 .includes(query)
         );
-    }, [searchText, data]);
+    }, [searchText, users]);
 
     return (
         <Card
@@ -195,7 +177,7 @@ const UserList = () => {
                     style={{ maxWidth: 320 }}
                 />
                 <Text type="secondary">
-                    {filteredData.length} of {data.length} users
+                    {filteredData.length} of {users.length} users
                 </Text>
             </Space>
 
@@ -203,6 +185,7 @@ const UserList = () => {
                 columns={columns}
                 dataSource={filteredData}
                 rowKey="key"
+                loading={loading}
                 scroll={{ x: 1300 }}
                 size="middle"
                 pagination={{
