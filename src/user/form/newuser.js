@@ -27,7 +27,6 @@ const CreateUser = () => {
         try {
             const values = await form.validateFields();
             setLoading(true);
-            // API call here
             setTimeout(() => {
                 console.log("New user:", values);
                 setLoading(false);
@@ -73,7 +72,7 @@ const CreateUser = () => {
                             name="userName"
                             rules={[
                                 { required: true, message: "Please enter username" },
-                                { min: 3, message: "Username must be at least 3 characters" },
+                                { message: "Please provide official eMail address" },
                             ]}
                         >
                             <Input placeholder="Enter username" prefix={<UserOutlined />} />
