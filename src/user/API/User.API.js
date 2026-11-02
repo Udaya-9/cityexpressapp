@@ -38,9 +38,9 @@ export const updateUserById_API = async (userData) => {
 
 export const ResetPassword_API = async (userData) => {
   const payload = {
-    sys_user_id: userData.sys_user_id,
-    Password: userData.Password,
+    oldpassword: userData.previousPassword, 
+    newpassword: userData.newPassword,      
   };
-  const response = await api.post("/user/reset-password", payload);
+  const response = await api.put("/user/reset-password", payload);
   return response;
 };

@@ -4,7 +4,7 @@ import Dashboard from './default';
 const DefaultPage = () => {
     return (
         <Dashboard>
-            <div style={{ padding: '20px' }}>                
+            <div style={{ padding: '20px' }}> 
             </div>
         </Dashboard>
     );

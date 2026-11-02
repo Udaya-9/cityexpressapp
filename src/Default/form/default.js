@@ -31,16 +31,16 @@ const { Text } = Typography;
 
 /* ---------- palette: corporate Blue / White / Red ---------- */
 const C = {
-  blue: '#0B3D91',       // primary corporate blue (matches login screen)
-  blueDeep: '#072A66',   // header gradient end / pressed states
-  blueSoft: '#EAF1FC',   // selected row tint
-  blueHover: '#F1F5FB',  // hover tint
-  red: '#D6212F',        // corporate red accent
+  blue: '#0B3D91',       
+  blueDeep: '#072A66',   
+  blueSoft: '#EAF1FC',   
+  blueHover: '#F1F5FB', 
+  red: '#D6212F',       
   white: '#FFFFFF',
-  ink: '#16233F',        // body text on white
-  inkMuted: '#5B6B8A',   // secondary text
-  line: '#E3E9F3',       // borders / dividers
-  page: '#F3F6FB',       // page background
+  ink: '#16233F',        
+  inkMuted: '#5B6B8A',   
+  line: '#E3E9F3',      
+  page: '#F3F6FB',      
 };
 
 /* ---------- layout sizes ---------- */

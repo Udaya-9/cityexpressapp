@@ -12,6 +12,7 @@ import Correspondence from "./correspondence/form";
 import Budget from "./budget/form";
 import ParameterSettings from "./parametersettings/form/parametersettings";
 import ParameterMenu from "./parametersettings/form/parameterrunner";
+import ResetPassword from "./user/form/resetpassword";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/budget/*" element={<Dashboard><Budget /></Dashboard>} />
         <Route path="/parameter-settings" element={<Dashboard><ParameterSettings /></Dashboard>} />
         <Route path="/parameter-menu/:parameterId" element={<Dashboard><ParameterMenu /></Dashboard>} />
+        <Route path="/change-password" element={<Dashboard><ResetPassword /></Dashboard>} />
       </Routes>
     </BrowserRouter>
   );
@@ -35,4 +37,3 @@ function App() {
 
 export default App;
 
-//action -> reference id 
