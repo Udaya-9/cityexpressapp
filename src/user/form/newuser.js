@@ -34,9 +34,7 @@ const CreateUser = () => {
     const [units, setUnits] = useState([]);
     const [roles, setRoles] = useState([]);
     const [optionsLoading, setOptionsLoading] = useState(true);
-    const [unitsLoading, setUnitsLoading] = useState(false);
-
-    // 🔹 Watch department field to trigger unit loading
+    const [unitsLoading, setUnitsLoading] = useState(false);    
     const departmentId = Form.useWatch("department", form);
 
 

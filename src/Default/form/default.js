@@ -29,16 +29,18 @@ import { listParameterMenusApi } from '../../parametersettings/API/parametersett
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-/* ---------- palette ---------- */
+/* ---------- palette: corporate Blue / White / Red ---------- */
 const C = {
-  sideTop: '#01519b',
-  sideBottom: '#013b73',
-  headerLeft: '#03044b',
-  headerRight: '#0a1a5c',
-  accent: '#4da3ff',
-  accentDeep: '#1a6fc9',
-  accentSoft: '#7ab7ff',
-  page: '#f4f7fc',
+  blue: '#0B3D91',       // primary corporate blue (matches login screen)
+  blueDeep: '#072A66',   // header gradient end / pressed states
+  blueSoft: '#EAF1FC',   // selected row tint
+  blueHover: '#F1F5FB',  // hover tint
+  red: '#D6212F',        // corporate red accent
+  white: '#FFFFFF',
+  ink: '#16233F',        // body text on white
+  inkMuted: '#5B6B8A',   // secondary text
+  line: '#E3E9F3',       // borders / dividers
+  page: '#F3F6FB',       // page background
 };
 
 /* ---------- layout sizes ---------- */
@@ -296,7 +298,6 @@ const Dashboard = ({ children }) => {
         if (d.organizationname) setOrg(d.organizationname);
         if (d.FullName) setFullName(d.FullName);
         setShowVendor(Number(d.vendor_menu) === 1);
-
       } catch (err) {
         // handled globally
       }
@@ -375,7 +376,11 @@ const Dashboard = ({ children }) => {
   };
 
   return (
-    <ConfigProvider theme={{ token: { motion: false } }}>
+    <ConfigProvider
+      theme={{
+        token: { motion: false, colorPrimary: C.blue, colorError: C.red, colorLink: C.blue },
+      }}
+    >
       <Layout style={{ minHeight: '100vh', background: C.page }}>
         <Sider
           trigger={null}
@@ -390,8 +395,8 @@ const Dashboard = ({ children }) => {
           width={SIDER_W}
           collapsedWidth={SIDER_COLLAPSED_W}
           style={{
-            background: `linear-gradient(180deg, ${C.sideTop} 0%, ${C.sideBottom} 100%)`,
-            boxShadow: '4px 0 24px rgba(1, 40, 90, 0.25)',
+            background: C.white,
+            boxShadow: `1px 0 0 ${C.line}, 6px 0 24px rgba(11, 61, 145, 0.07)`,
             position: 'sticky',
             top: 0,
             height: '100vh',
@@ -400,15 +405,14 @@ const Dashboard = ({ children }) => {
           }}
         >
           <div className="ce-sider">
-            <div className="ce-brand">
-              {isExpanded && (
-                <span className="ce-brand-name">{org}</span>
-              )}
+            <div className={`ce-brand ${isExpanded ? '' : 'is-collapsed'}`}>
+              <span className="ce-brand-mark" />
+              {isExpanded && <span className="ce-brand-name">{org}</span>}
             </div>
 
             <div className="ce-menu-wrap">
               <Menu
-                theme="dark"
+                theme="light"
                 mode="inline"
                 selectedKeys={[selectedKey]}
                 openKeys={isExpanded ? openKeys : []}
@@ -433,15 +437,15 @@ const Dashboard = ({ children }) => {
           {/* ================= HEADER ================= */}
           <Header
             style={{
-              background: `linear-gradient(90deg, ${C.headerLeft} 0%, ${C.headerRight} 100%)`,
+              background: `linear-gradient(90deg, ${C.blue} 0%, ${C.blueDeep} 100%)`,
               padding: '0 14px',
               height: HEADER_H,
               lineHeight: 'normal',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 2px 12px rgba(3, 4, 75, 0.22)',
+              // 3px red rule along the bottom edge (echoes the login card stripe)
+              boxShadow: `inset 0 -3px 0 ${C.red}, 0 2px 12px rgba(7, 42, 102, 0.22)`,
               position: 'sticky',
               top: 0,
               zIndex: 90,
@@ -457,7 +461,7 @@ const Dashboard = ({ children }) => {
             </div>
 
             {/* RIGHT: fiscal → user */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto', paddingBottom: 3 }}>
               <div className="ce-fy">
                 <CalendarOutlined />
                 <span className="ce-fy-value">{fiscalYear}</span>
@@ -476,12 +480,13 @@ const Dashboard = ({ children }) => {
                     size={26}
                     icon={<UserOutlined />}
                     style={{
-                      background: `linear-gradient(135deg, ${C.accent}, ${C.accentDeep})`,
-                      border: '2px solid rgba(255, 255, 255, 0.35)',
+                      background: C.white,
+                      color: C.blue,
+                      border: `2px solid ${C.red}`,
                     }}
                   />
                   <span className="ce-user-name">{fullName}</span>
-                  <DownOutlined style={{ color: 'rgba(255,255,255,0.7)', fontSize: 8 }} />
+                  <DownOutlined style={{ color: 'rgba(255,255,255,0.75)', fontSize: 8 }} />
                 </div>
               </Dropdown>
             </div>
@@ -492,7 +497,7 @@ const Dashboard = ({ children }) => {
             <div className="ce-param-bar">
               <Menu
                 mode="horizontal"
-                theme="dark"
+                theme="light"
                 className="ce-param-menu"
                 selectedKeys={activeParameterMenu ? [activeParameterMenu.parameterId] : []}
                 items={parameterMenus.map((item) => ({
@@ -525,113 +530,117 @@ const Dashboard = ({ children }) => {
           }
 
           /* ----- sidebar shell ----- */
-          .ce-sider { display: flex; flex-direction: column; height: 100%; }
+          .ce-sider { display: flex; flex-direction: column; height: 100%; background: ${C.white}; }
 
           .ce-brand {
             height: ${BRAND_H}px; flex: none;
-            display: flex; align-items: center;
-            padding: 0 14px;
-            background: rgba(0, 0, 0, 0.18);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 16px;
+            background: ${C.white};
+            border-bottom: 1px solid ${C.line};
             white-space: nowrap; overflow: hidden;
           }
+          .ce-brand.is-collapsed { justify-content: center; padding: 0; }
+          .ce-brand-mark {
+            flex: none; width: 4px; height: 20px; border-radius: 2px;
+            background: ${C.red};
+          }
           .ce-brand-name {
-            color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0.3px;
+            color: ${C.blue}; font-size: 13px; font-weight: 700; letter-spacing: 0.2px;
             text-transform: capitalize;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
 
           .ce-menu-wrap {
             flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
-            padding: 6px 6px 12px;
+            padding: 6px 8px 12px;
           }
           .ce-menu-wrap::-webkit-scrollbar { width: 4px; }
-          .ce-menu-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+          .ce-menu-wrap::-webkit-scrollbar-thumb { background: ${C.line}; border-radius: 10px; }
 
           .ce-sider-footer {
             flex: none; height: 30px;
             display: flex; align-items: center; justify-content: center; gap: 6px;
-            color: rgba(255,255,255,0.55); font-size: 11px;
-            background: rgba(0, 0, 0, 0.18);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: ${C.inkMuted}; font-size: 11px;
+            background: ${C.page};
+            border-top: 1px solid ${C.line};
           }
 
           /* ----- group headings ----- */
-          .ce-menu.ant-menu-dark .ant-menu-item-group-title {
-            padding: 10px 10px 2px;
-            font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.42);
+          .ce-menu.ant-menu-light .ant-menu-item-group-title {
+            padding: 12px 10px 3px;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+            color: ${C.inkMuted};
           }
-          .ce-menu.ant-menu-dark.ant-menu-inline-collapsed .ant-menu-item-group-title {
+          .ce-menu.ant-menu-light.ant-menu-inline-collapsed .ant-menu-item-group-title {
             height: 1px; padding: 0; margin: 6px 10px;
             overflow: hidden; font-size: 0;
-            background: rgba(255, 255, 255, 0.12);
+            background: ${C.line};
           }
 
           /* ----- top-level rows ----- */
-          .ce-menu.ant-menu-dark .ant-menu-item,
-          .ce-menu.ant-menu-dark .ant-menu-submenu-title {
+          .ce-menu.ant-menu-light .ant-menu-item,
+          .ce-menu.ant-menu-light .ant-menu-submenu-title {
             height: 34px; line-height: 34px;
             margin: 1px 0; width: 100%;
             border-radius: 8px;
-            color: rgba(255, 255, 255, 0.82);
+            color: ${C.ink};
             font-size: 13px; font-weight: 500;
           }
-          .ce-menu.ant-menu-dark .ant-menu-item .anticon,
-          .ce-menu.ant-menu-dark .ant-menu-submenu-title .anticon {
+          .ce-menu.ant-menu-light .ant-menu-item .anticon,
+          .ce-menu.ant-menu-light .ant-menu-submenu-title .anticon {
             font-size: 14px;
+            color: ${C.blue};
           }
-          .ce-menu.ant-menu-dark.ant-menu-inline-collapsed .ant-menu-item,
-          .ce-menu.ant-menu-dark.ant-menu-inline-collapsed .ant-menu-submenu-title {
+          .ce-menu.ant-menu-light.ant-menu-inline-collapsed .ant-menu-item,
+          .ce-menu.ant-menu-light.ant-menu-inline-collapsed .ant-menu-submenu-title {
             padding-inline: calc(50% - 7px);
           }
 
-          .ce-menu.ant-menu-dark .ant-menu-item:hover,
-          .ce-menu.ant-menu-dark .ant-menu-submenu-title:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+          .ce-menu.ant-menu-light .ant-menu-item:hover,
+          .ce-menu.ant-menu-light .ant-menu-submenu-title:hover {
+            background: ${C.blueHover};
+            color: ${C.blue};
           }
 
-          .ce-menu.ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title {
-            color: #fff; font-weight: 600;
-            background: rgba(255, 255, 255, 0.06);
+          .ce-menu.ant-menu-light .ant-menu-submenu-selected > .ant-menu-submenu-title {
+            color: ${C.blue}; font-weight: 600;
+            background: ${C.blueHover};
           }
-          .ce-menu.ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon {
-            color: ${C.accentSoft};
-          }
-          .ce-menu.ant-menu-dark .ant-menu-submenu-arrow { opacity: 0.7; }
+          .ce-menu.ant-menu-light .ant-menu-submenu-arrow { color: ${C.inkMuted}; }
 
-          .ce-menu.ant-menu-dark .ant-menu-sub.ant-menu-inline {
+          .ce-menu.ant-menu-light .ant-menu-sub.ant-menu-inline {
             background: transparent;
             position: relative;
             margin: 1px 0 3px 20px;
             padding: 0;
-            border-left: 1px solid rgba(255, 255, 255, 0.16);
+            border-left: 1px solid ${C.line};
             border-radius: 0;
           }
-          .ce-menu.ant-menu-dark .ant-menu-sub .ant-menu-item {
+          .ce-menu.ant-menu-light .ant-menu-sub .ant-menu-item {
             height: 28px; line-height: 28px;
             margin: 1px 0 1px 6px; width: calc(100% - 6px);
             padding-left: 10px !important;
             font-size: 12.5px; font-weight: 400;
-            color: rgba(255, 255, 255, 0.72);
+            color: ${C.inkMuted};
           }
+          .ce-menu.ant-menu-light .ant-menu-sub .ant-menu-item:hover { color: ${C.blue}; }
 
-          .ce-menu.ant-menu-dark .ant-menu-item-selected {
+          /* ----- selected row: blue tint + red indicator ----- */
+          .ce-menu.ant-menu-light .ant-menu-item-selected {
             position: relative;
-            background: linear-gradient(90deg, rgba(122,183,255,0.28), rgba(77,163,255,0.12));
-            color: #fff;
+            background: ${C.blueSoft};
+            color: ${C.blue};
             font-weight: 600;
-            box-shadow: inset 0 0 0 1px rgba(122, 183, 255, 0.35);
           }
-          .ce-menu.ant-menu-dark .ant-menu-item-selected::before {
+          .ce-menu.ant-menu-light .ant-menu-item-selected .anticon { color: ${C.blue}; }
+          .ce-menu.ant-menu-light .ant-menu-item-selected::before {
             content: '';
             position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px;
-            background: ${C.accentSoft};
+            background: ${C.red};
             border-radius: 0 4px 4px 0;
           }
-          .ce-menu.ant-menu-dark .ant-menu-sub .ant-menu-item-selected::before {
+          .ce-menu.ant-menu-light .ant-menu-sub .ant-menu-item-selected::before {
             left: -7px; top: 5px; bottom: 5px;
             border-radius: 4px;
           }
@@ -639,68 +648,69 @@ const Dashboard = ({ children }) => {
           /* ----- header pieces ----- */
           .ce-icon-btn {
             width: 30px; height: 30px; border-radius: 8px; flex: none;
+            margin-bottom: 3px;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
             color: #fff; font-size: 14px; cursor: pointer;
           }
-          .ce-icon-btn:hover { background: rgba(255, 255, 255, 0.18); }
+          .ce-icon-btn:hover { background: rgba(255, 255, 255, 0.24); }
 
-          .ce-divider { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.14); flex: none; }
+          .ce-divider { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.25); flex: none; }
 
           .ce-fy {
             display: flex; align-items: center; gap: 6px;
             padding: 3px 10px; border-radius: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: ${C.accentSoft}; font-size: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: rgba(255, 255, 255, 0.85); font-size: 12px;
           }
           .ce-fy-value { color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
 
           .ce-user {
             display: flex; align-items: center; gap: 6px; cursor: pointer;
             padding: 3px 8px 3px 3px; border-radius: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
             max-width: 200px;
           }
-          .ce-user:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255,255,255,0.25); }
+          .ce-user:hover { background: rgba(255, 255, 255, 0.24); border-color: rgba(255,255,255,0.4); }
           .ce-user-name {
             color: #fff; font-weight: 600; font-size: 12px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
 
-          /* ----- parameter menu bar ----- */
+          /* ----- parameter menu bar (white, red underline on active) ----- */
           .ce-param-bar {
             position: sticky; top: ${HEADER_H}px; z-index: 80;
             padding: 0 10px;
-            background: linear-gradient(90deg, ${C.sideBottom} 0%, ${C.sideTop} 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 2px 10px rgba(1, 40, 90, 0.16);
+            background: ${C.white};
+            border-bottom: 1px solid ${C.line};
+            box-shadow: 0 2px 10px rgba(11, 61, 145, 0.06);
           }
-          .ce-param-menu.ant-menu-dark {
+          .ce-param-menu.ant-menu-light {
             height: 38px; line-height: 38px;
             font-size: 12.5px; font-weight: 500;
           }
-          .ce-param-menu.ant-menu-dark .ant-menu-item {
+          .ce-param-menu.ant-menu-light .ant-menu-item {
             height: 38px; line-height: 38px;
             margin: 0; padding: 0 14px;
             border-radius: 0;
-            color: rgba(255, 255, 255, 0.8);
+            color: ${C.inkMuted};
           }
-          .ce-param-menu.ant-menu-dark .ant-menu-item::after { display: none; }
-          .ce-param-menu.ant-menu-dark .ant-menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+          .ce-param-menu.ant-menu-light .ant-menu-item::after { display: none; }
+          .ce-param-menu.ant-menu-light .ant-menu-item:hover {
+            background: ${C.blueHover};
+            color: ${C.blue};
           }
-          .ce-param-menu.ant-menu-dark .ant-menu-item-selected {
-            background: rgba(255, 255, 255, 0.16);
-            color: #fff; font-weight: 600;
-            box-shadow: inset 0 -3px 0 ${C.accentSoft};
+          .ce-param-menu.ant-menu-light .ant-menu-item-selected {
+            background: ${C.blueSoft};
+            color: ${C.blue}; font-weight: 600;
+            box-shadow: inset 0 -3px 0 ${C.red};
           }
-          .ce-param-menu.ant-menu-dark .ant-menu-overflow-item-rest,
-          .ce-param-menu.ant-menu-dark .ant-menu-overflow-item-suffix {
-            color: #fff;
+          .ce-param-menu.ant-menu-light .ant-menu-overflow-item-rest,
+          .ce-param-menu.ant-menu-light .ant-menu-overflow-item-suffix {
+            color: ${C.blue};
           }
 
           /* ----- page title strip ----- */
@@ -709,7 +719,7 @@ const Dashboard = ({ children }) => {
             padding: 0 2px;
           }
           .ce-page-title {
-            color: #0a1a5c !important;
+            color: ${C.blue} !important;
             font-size: 16px !important;
             font-weight: 700 !important;
             letter-spacing: 0.2px;
@@ -717,27 +727,27 @@ const Dashboard = ({ children }) => {
 
           /* ----- content shell ----- */
           .ce-content {
-            margin: 0 16px 16px;
+            margin: 16px 16px 16px;
             padding: 24px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 16px 32px -16px rgba(1, 40, 90, 0.12), 0 2px 8px rgba(0, 0, 0, 0.02);
-            border: 1px solid #eef2f8;
+            background: ${C.white};
+            border-radius: 12px;
+            box-shadow: 0 12px 28px -16px rgba(11, 61, 145, 0.14), 0 1px 3px rgba(11, 61, 145, 0.04);
+            border: 1px solid ${C.line};
             overflow: auto;
           }
 
           @media (max-width: 1180px) {
             .ce-user-name { display: none; }
-            .ce-param-menu.ant-menu-dark .ant-menu-item { padding: 0 10px; }
+            .ce-param-menu.ant-menu-light .ant-menu-item { padding: 0 10px; }
           }
           @media (max-width: 900px) {
             .ce-fy { display: none; }
           }
           @media (max-width: 992px) {
-            .ce-content { margin: 0 12px 12px; padding: 16px; border-radius: 12px; }
+            .ce-content { margin: 12px; padding: 16px; border-radius: 10px; }
           }
           @media (max-width: 576px) {
-            .ce-content { margin: 0 8px 8px; padding: 12px; border-radius: 10px; }
+            .ce-content { margin: 8px; padding: 12px; border-radius: 8px; }
             .ce-page-strip { margin: 10px 10px 6px; }
             .ce-divider { display: none; }
             .ce-param-bar { padding: 0 4px; }
@@ -745,24 +755,36 @@ const Dashboard = ({ children }) => {
 
           /* ----- user dropdown ----- */
           .ant-dropdown-menu {
-            border-radius: 14px !important;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 12px 40px rgba(7, 42, 102, 0.16) !important;
             padding: 8px !important;
-            border: 1px solid #eef2f8 !important;
+            border: 1px solid ${C.line} !important;
           }
           .ant-dropdown-menu-item {
-            border-radius: 10px !important;
+            border-radius: 8px !important;
             padding: 10px 14px !important;
             font-weight: 500 !important;
             font-size: 13.5px !important;
+            color: ${C.ink};
           }
-          .ant-dropdown-menu-item:hover { background: #f0f5fe !important; }
+          .ant-dropdown-menu-item:hover { background: ${C.blueHover} !important; }
+          .ant-dropdown-menu-item-danger { color: ${C.red} !important; }
+          .ant-dropdown-menu-item-danger:hover { background: #FDECEE !important; }
+
+          /* ----- keyboard focus ----- */
+          .ce-icon-btn:focus-visible,
+          .ce-user:focus-visible,
+          .ce-menu .ant-menu-item:focus-visible,
+          .ce-param-menu .ant-menu-item:focus-visible {
+            outline: 2px solid ${C.red};
+            outline-offset: 2px;
+          }
 
           /* ----- page scrollbar ----- */
           ::-webkit-scrollbar { width: 8px; height: 8px; }
           ::-webkit-scrollbar-track { background: transparent; }
-          ::-webkit-scrollbar-thumb { background: #d4dfee; border-radius: 10px; }
-          ::-webkit-scrollbar-thumb:hover { background: #b0c4dc; }
+          ::-webkit-scrollbar-thumb { background: #cfd9ea; border-radius: 10px; }
+          ::-webkit-scrollbar-thumb:hover { background: #a9b9d4; }
         `}</style>
       </Layout>
     </ConfigProvider>
