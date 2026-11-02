@@ -37,7 +37,6 @@ const CreateUser = () => {
     const [unitsLoading, setUnitsLoading] = useState(false);    
     const departmentId = Form.useWatch("department", form);
 
-
     useEffect(() => {
         let cancelled = false;
 
@@ -65,7 +64,6 @@ const CreateUser = () => {
         };
     }, []);
 
-  
     useEffect(() => {
         let cancelled = false;
 
@@ -77,9 +75,7 @@ const CreateUser = () => {
 
             setUnitsLoading(true);
             try {
-                //  Using your exact method here
-                const unitList =
-                    await genericService.getUnitsByDeparmentId(departmentId);
+                const unitList = await genericService.getUnitsByDeparmentId(departmentId);
                 if (cancelled) return;
                 setUnits(unitList || []);
             } catch (error) {
@@ -103,7 +99,7 @@ const CreateUser = () => {
             
             const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
             const _CreatedBy = storedUser.id; 
-             const roleValues = Array.isArray(values.roles) 
+            const roleValues = Array.isArray(values.roles) 
             ? values.roles.map(selectedGuid => {
                 const roleObj = roles.find(r => r.Value === selectedGuid);
                 return roleObj ? roleObj.Label : selectedGuid; 
@@ -130,8 +126,12 @@ const CreateUser = () => {
             setLoading(false);
         }
     };
+
     return (
         <Card
+            variant="borderless" // 👈 Removes the extra outer border
+            style={{ boxShadow: "none" }} // 👈 Removes the shadow
+            styles={{ body: { padding: 0 } }} // 👈 Removes internal padding to align with dashboard
             title={
                 <Space>
                     <UserOutlined />

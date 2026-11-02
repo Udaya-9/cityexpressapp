@@ -24,9 +24,15 @@ export const GetAllUsers_API = async (userData) => {
 
 export const updateUserById_API = async (userData) => {
   const payload = {
+    emailaddress: userData.emailaddress,
+    fullname: userData.fullname,
+    DepartmentId: userData.DepartmentId,
+    Unit: userData.Unit,
+    roles: userData.roles,
     sys_user_id: userData.sys_user_id,
+    IsBlocked: userData.IsBlocked,
   };
-  const response = await api.put("/user/udpate", payload);
+  const response = await api.put("/user/update", payload);
   return response.data;
 };
 

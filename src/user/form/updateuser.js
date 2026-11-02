@@ -1,26 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-    Card,
-    Form,
-    Input,
-    Select,
-    Switch,
-    Button,
-    Space,
-    Typography,
-    Row,
-    Col,
-    Divider,
-    message,
-    Spin,
+    Card, Form, Input, Select, Switch, Button, Space, Typography,
+    Row, Col, Divider, message, Spin,
 } from "antd";
 import {
-    UserOutlined,
-    SaveOutlined,
-    ArrowLeftOutlined,
-    LockOutlined,
-    EditOutlined,
+    UserOutlined, SaveOutlined, ArrowLeftOutlined, LockOutlined, EditOutlined,
 } from "@ant-design/icons";
 import { GetAllUsers_API, updateUserById_API } from "../API/User.API";
 import { GenericService } from "../../API/generic/genericservice";
@@ -32,10 +17,10 @@ const UpdateUser = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [form] = Form.useForm();
-    
+
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [userEmail, setUserEmail] = useState(""); 
+    const [userEmail, setUserEmail] = useState("");
 
     // 🔹 Dropdown states
     const [departments, setDepartments] = useState([]);
@@ -44,8 +29,12 @@ const UpdateUser = () => {
     const [optionsLoading, setOptionsLoading] = useState(true);
     const [unitsLoading, setUnitsLoading] = useState(false);
 
-    // Watch the department field to trigger unit changes
+    // 🔹 Watch form fields
     const departmentId = Form.useWatch("department", form);
+    const isDisabled = Form.useWatch("disabled", form);
+
+    // 👈 Keep track of the previous department to know if the user changed it manually
+    const prevDeptIdRef = useRef(null);
 
     // 🔹 Load Departments and Roles on mount
     useEffect(() => {
@@ -71,34 +60,7 @@ const UpdateUser = () => {
         return () => { cancelled = true; };
     }, []);
 
-    // 🔹 Load Units whenever department changes (but not during initial load)
-    useEffect(() => {
-        let cancelled = false;
-        const loadUnits = async () => {
-            if (fetching) return; // Skip if we are still fetching user data
-
-            form.setFieldValue("unit", undefined);
-            setUnits([]);
-
-            if (!departmentId) return;
-
-            setUnitsLoading(true);
-            try {
-                const unitList = await genericService.getUnitsByDeparmentId(departmentId);
-                if (cancelled) return;
-                setUnits(unitList || []);
-            } catch (error) {
-                console.error("Load units error:", error);
-                if (!cancelled) message.error("Failed to load units");
-            } finally {
-                if (!cancelled) setUnitsLoading(false);
-            }
-        };
-        loadUnits();
-        return () => { cancelled = true; };
-    }, [departmentId, form, fetching]);
-
-    // 🔹 Fetch the user by Id and map names back to GUIDs
+    // 🔹 Fetch the user by Id
     useEffect(() => {
         const fetchUser = async () => {
             if (!id) {
@@ -118,7 +80,9 @@ const UpdateUser = () => {
             setFetching(true);
 
             try {
-                const result = await GetAllUsers_API({ sys_user_id: sysUser.id || sysUser.Id });
+                const result = await GetAllUsers_API({
+                    sys_user_id: sysUser.id || sysUser.Id,
+                });
 
                 if (result.success && result.data) {
                     const match = result.data.find(
@@ -133,30 +97,35 @@ const UpdateUser = () => {
 
                     setUserEmail(match.UserName || "");
 
-                    // 👈 1. Map Department Name to Department ID
-                    const deptMatch = departments.find(d => d.Label === match.DepartmentName);
+                    // 1. Map Department
+                    const deptMatch = departments.find((d) => d.Label === match.DepartmentName);
                     const deptId = deptMatch ? deptMatch.Value : undefined;
 
-                    // 👈 2. Load units for this department, then map Unit Name to Unit ID
+                    // 2. Fetch Units for this department
                     let unitList = [];
                     if (deptId) {
                         unitList = await genericService.getUnitsByDeparmentId(deptId);
                         setUnits(unitList || []);
                     }
-                    const unitMatch = unitList.find(u => u.Label === match.UnitName);
+
+                    // 3. Map Unit
+                    const unitMatch = unitList.find((u) => u.Label === match.UnitName);
                     const unitId = unitMatch ? unitMatch.Value : undefined;
 
-                    // 👈 3. Map Roles string (e.g. "Admin,User") back to an array of GUIDs
+                    // 4. Map Roles
                     let roleGuids = [];
                     if (match.Roles) {
                         const savedRoles = match.Roles.split(",");
-                        roleGuids = savedRoles.map(roleName => {
-                            const roleObj = roles.find(r => r.Label === roleName.trim());
-                            return roleObj ? roleObj.Value : roleName; 
+                        roleGuids = savedRoles.map((roleName) => {
+                            const roleObj = roles.find((r) => r.Label === roleName.trim());
+                            return roleObj ? roleObj.Value : roleName;
                         });
                     }
 
-                    // 4. Set the form values
+                    // 5. Save the initial department to ref BEFORE setting form values
+                    prevDeptIdRef.current = deptId;
+
+                    // 6. Set form values
                     form.setFieldsValue({
                         userName: match.UserName,
                         fullName: match.FullName,
@@ -176,11 +145,51 @@ const UpdateUser = () => {
             }
         };
 
-        // Wait for the dropdown options to load before fetching the user
         if (!optionsLoading) {
             fetchUser();
         }
-    }, [id, form, navigate, optionsLoading, departments, roles]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, optionsLoading]); // 👈 Removed departments/roles from deps to prevent re-fetching
+
+    // 🔹 Handle Units loading (Both Initial Load and Manual Change)
+    useEffect(() => {
+        let cancelled = false;
+        
+        const loadUnits = async () => {
+            // If no department is selected, clear units
+            if (!departmentId) {
+                setUnits([]);
+                return;
+            }
+
+            // 👈 Check if the department was changed manually by the user
+            if (prevDeptIdRef.current !== departmentId) {
+                form.setFieldValue("unit", undefined); // Clear unit ONLY on manual change
+                prevDeptIdRef.current = departmentId;  // Update the ref
+            }
+
+            // If units are already loaded for this department (e.g., during initial fetch), skip
+            if (units.length > 0 && units[0].DepartmentId === departmentId) {
+                return; 
+            }
+
+            setUnitsLoading(true);
+            try {
+                const unitList = await genericService.getUnitsByDeparmentId(departmentId);
+                if (cancelled) return;
+                setUnits(unitList || []);
+            } catch (error) {
+                console.error("Load units error:", error);
+                if (!cancelled) message.error("Failed to load units");
+            } finally {
+                if (!cancelled) setUnitsLoading(false);
+            }
+        };
+        
+        loadUnits();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [departmentId, form]);
 
     // 🔹 Save
     const handleSubmit = async () => {
@@ -196,7 +205,6 @@ const UpdateUser = () => {
                 fullname: values.fullName,
                 DepartmentId: values.department,
                 Unit: values.unit ?? null,
-                // Map the selected role GUIDs back to strings (e.g. "Admin,User")
                 roles: Array.isArray(values.roles)
                     ? values.roles.map(selectedGuid => {
                         const roleObj = roles.find(r => r.Value === selectedGuid);
@@ -207,8 +215,6 @@ const UpdateUser = () => {
                 IsBlocked: values.disabled ? 1 : 0,
                 action: 'u'
             };
-
-            console.log("Sending Payload to API:", payload);
 
             await updateUserById_API(payload);
             message.success("User updated successfully");
@@ -225,7 +231,7 @@ const UpdateUser = () => {
 
     if (fetching) {
         return (
-            <Card>
+            <Card variant="borderless" style={{ boxShadow: "none" }}>
                 <div style={{ textAlign: "center", padding: 60 }}>
                     <Spin size="large" tip="Loading user data..." />
                 </div>
@@ -235,6 +241,9 @@ const UpdateUser = () => {
 
     return (
         <Card
+            variant="borderless"
+            style={{ boxShadow: "none" }}
+            styles={{ body: { padding: 0 } }}
             title={
                 <Space>
                     <EditOutlined />
@@ -250,12 +259,7 @@ const UpdateUser = () => {
                 </Button>
             }
         >
-            <Form
-                form={form}
-                layout="vertical"
-                autoComplete="off"
-                initialValues={{ disabled: false }}
-            >
+            <Form form={form} layout="vertical" autoComplete="off" initialValues={{ disabled: false }}>
                 <Row gutter={24}>
                     <Col xs={24} sm={12} lg={12}>
                         <Form.Item label="User Name" name="userName">
@@ -317,8 +321,17 @@ const UpdateUser = () => {
 
                 <Row gutter={24}>
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item label="Disable User" name="disabled" valuePropName="checked">
-                            <Switch checkedChildren="Disabled" unCheckedChildren="Active" />
+                        <Form.Item
+                            label="Disable User"
+                            name="disabled"
+                            valuePropName="checked"
+                            extra={<Text type="secondary" style={{ fontSize: 12 }}>Prevents the user from logging in</Text>}
+                        >
+                            <Switch
+                                checkedChildren="Disabled"
+                                unCheckedChildren="Active"
+                                style={{ backgroundColor: isDisabled ? "#ff4d4f" : "#52c41a" }}
+                            />
                         </Form.Item>
                     </Col>
                 </Row>
