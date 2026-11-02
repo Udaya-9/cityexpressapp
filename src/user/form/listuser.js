@@ -136,34 +136,35 @@ const UserList = () => {
         <>
             <style>{`
                 .custom-header-table .ant-table-thead > tr > th {
-                    background: #1890ff !important; /* Primary blue header */
-                    color: #ffffff !important;      /* White text */
-                    padding: 8px 12px !important;   /* Compact spacing */
+                    background: #1890ff !important; 
+                    color: #ffffff !important;      
+                    padding: 8px 12px !important;   
                     border-bottom: none !important;
                 }
                 
-                /* Remove background change on hover for header */
                 .custom-header-table .ant-table-thead > tr > th:hover {
                     background: #1890ff !important; 
                 }
 
                 .custom-header-table .ant-table-tbody > tr > td {
-                    padding: 6px 12px !important; /* Compact spacing */
+                    padding: 6px 12px !important; 
                 }
 
                 .custom-header-table .ant-table-pagination.ant-pagination {
-                    margin: 12px 0 0 0 !important; /* Compact pagination spacing */
+                    margin: 12px 0 0 0 !important; 
                 }
             `}</style>
 
             <Card
+                variant="borderless" // 👈 Removes the extra inner border line
+                style={{ boxShadow: "none" }} // 👈 Removes the shadow
+                styles={{ body: { paddingTop: 16 } }}
                 title={<Text strong>User Management</Text>}
                 extra={
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("create")}>
                         Create New User
                     </Button>
                 }
-                styles={{ body: { paddingTop: 16 } }}
             >
                 <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }}>
                     <Input
