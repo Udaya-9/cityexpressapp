@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";   // 👈 useParams
+import { useNavigate, useParams } from "react-router-dom";
 import {
     Card,
     Form,
@@ -20,23 +20,85 @@ import {
     SaveOutlined,
     ArrowLeftOutlined,
     LockOutlined,
-    StopOutlined,
     EditOutlined,
 } from "@ant-design/icons";
-import { GetAllUsers_API } from "../API/User.API";
+import { GetAllUsers_API, updateUserById_API } from "../API/User.API";
+import { GenericService } from "../../API/generic/genericservice";
 
 const { Text } = Typography;
-const { Option } = Select;
+const genericService = new GenericService();
 
 const UpdateUser = () => {
     const navigate = useNavigate();
-    const { id } = useParams();          // 👈 Id from /User/edit/:id
+    const { id } = useParams();
     const [form] = Form.useForm();
+    
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [userEmail, setUserEmail] = useState(""); // for display in title
+    const [userEmail, setUserEmail] = useState(""); 
 
-    // 🔹 Fetch the user by Id
+    // 🔹 Dropdown states
+    const [departments, setDepartments] = useState([]);
+    const [units, setUnits] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [optionsLoading, setOptionsLoading] = useState(true);
+    const [unitsLoading, setUnitsLoading] = useState(false);
+
+    // Watch the department field to trigger unit changes
+    const departmentId = Form.useWatch("department", form);
+
+    // 🔹 Load Departments and Roles on mount
+    useEffect(() => {
+        let cancelled = false;
+        const loadOptions = async () => {
+            setOptionsLoading(true);
+            try {
+                const [deptList, roleList] = await Promise.all([
+                    genericService.getDepartments(),
+                    genericService.getRoles(),
+                ]);
+                if (cancelled) return;
+                setDepartments(deptList || []);
+                setRoles(roleList || []);
+            } catch (error) {
+                console.error("Load options error:", error);
+                message.error("Failed to load form options");
+            } finally {
+                if (!cancelled) setOptionsLoading(false);
+            }
+        };
+        loadOptions();
+        return () => { cancelled = true; };
+    }, []);
+
+    // 🔹 Load Units whenever department changes (but not during initial load)
+    useEffect(() => {
+        let cancelled = false;
+        const loadUnits = async () => {
+            if (fetching) return; // Skip if we are still fetching user data
+
+            form.setFieldValue("unit", undefined);
+            setUnits([]);
+
+            if (!departmentId) return;
+
+            setUnitsLoading(true);
+            try {
+                const unitList = await genericService.getUnitsByDeparmentId(departmentId);
+                if (cancelled) return;
+                setUnits(unitList || []);
+            } catch (error) {
+                console.error("Load units error:", error);
+                if (!cancelled) message.error("Failed to load units");
+            } finally {
+                if (!cancelled) setUnitsLoading(false);
+            }
+        };
+        loadUnits();
+        return () => { cancelled = true; };
+    }, [departmentId, form, fetching]);
+
+    // 🔹 Fetch the user by Id and map names back to GUIDs
     useEffect(() => {
         const fetchUser = async () => {
             if (!id) {
@@ -56,15 +118,11 @@ const UpdateUser = () => {
             setFetching(true);
 
             try {
-                const result = await GetAllUsers_API({
-                    sys_user_id: sysUser.id,
-                });
+                const result = await GetAllUsers_API({ sys_user_id: sysUser.id || sysUser.Id });
 
                 if (result.success && result.data) {
                     const match = result.data.find(
-                        (u) =>
-                            String(u.Id).toLowerCase() ===
-                            String(id).toLowerCase()
+                        (u) => String(u.Id).toLowerCase() === String(id).toLowerCase()
                     );
 
                     if (!match) {
@@ -75,15 +133,37 @@ const UpdateUser = () => {
 
                     setUserEmail(match.UserName || "");
 
+                    // 👈 1. Map Department Name to Department ID
+                    const deptMatch = departments.find(d => d.Label === match.DepartmentName);
+                    const deptId = deptMatch ? deptMatch.Value : undefined;
+
+                    // 👈 2. Load units for this department, then map Unit Name to Unit ID
+                    let unitList = [];
+                    if (deptId) {
+                        unitList = await genericService.getUnitsByDeparmentId(deptId);
+                        setUnits(unitList || []);
+                    }
+                    const unitMatch = unitList.find(u => u.Label === match.UnitName);
+                    const unitId = unitMatch ? unitMatch.Value : undefined;
+
+                    // 👈 3. Map Roles string (e.g. "Admin,User") back to an array of GUIDs
+                    let roleGuids = [];
+                    if (match.Roles) {
+                        const savedRoles = match.Roles.split(",");
+                        roleGuids = savedRoles.map(roleName => {
+                            const roleObj = roles.find(r => r.Label === roleName.trim());
+                            return roleObj ? roleObj.Value : roleName; 
+                        });
+                    }
+
+                    // 4. Set the form values
                     form.setFieldsValue({
                         userName: match.UserName,
                         fullName: match.FullName,
-                        department: match.DepartmentName,
-                        unit: match.UnitName,
-                        roles: match.Roles || [],
-                        accessOnline: match.Status === "Active",
-                        disabled: match.Status === "Inactive",
-                        temporaryLock: match.IsLocked === true,
+                        department: deptId,
+                        unit: unitId,
+                        roles: roleGuids,
+                        disabled: match.Status === "Blocked" || match.Status === "Inactive",
                     });
                 } else {
                     message.error(result?.message || "Failed to load user");
@@ -96,8 +176,11 @@ const UpdateUser = () => {
             }
         };
 
-        fetchUser();
-    }, [id, form, navigate]);
+        // Wait for the dropdown options to load before fetching the user
+        if (!optionsLoading) {
+            fetchUser();
+        }
+    }, [id, form, navigate, optionsLoading, departments, roles]);
 
     // 🔹 Save
     const handleSubmit = async () => {
@@ -105,28 +188,37 @@ const UpdateUser = () => {
             const values = await form.validateFields();
             setLoading(true);
 
+            const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+            const _UpdatedBy = storedUser.id || storedUser.Id;
+
             const payload = {
-                Id: id,                                 // 👈 include Id
-                UserName: values.userName,
-                FullName: values.fullName,
-                DepartmentName: values.department,
-                UnitName: values.unit,
-                Roles: values.roles,
-                Status: values.disabled ? "Inactive" : "Active",
-                IsLocked: values.temporaryLock,
-                AccessOnline: values.accessOnline,
+                emailaddress: userEmail,
+                fullname: values.fullName,
+                DepartmentId: values.department,
+                Unit: values.unit ?? null,
+                // Map the selected role GUIDs back to strings (e.g. "Admin,User")
+                roles: Array.isArray(values.roles)
+                    ? values.roles.map(selectedGuid => {
+                        const roleObj = roles.find(r => r.Value === selectedGuid);
+                        return roleObj ? roleObj.Label : selectedGuid; 
+                    }).join(",")
+                    : String(values.roles || ""),
+                sys_user_id: _UpdatedBy, 
+                IsBlocked: values.disabled ? 1 : 0,
+                action: 'u'
             };
 
-            // TODO: replace with your UpdateUser_API(payload)
-            console.log("Updated user:", payload);
+            console.log("Sending Payload to API:", payload);
 
-            setTimeout(() => {
-                message.success("User updated successfully");
-                setLoading(false);
-                navigate("/User");
-            }, 800);
+            await updateUserById_API(payload);
+            message.success("User updated successfully");
+            navigate("/User");
         } catch (error) {
-            console.error("Validation failed:", error);
+            console.error("Update error:", error);
+            if (!error?.errorFields) {
+                message.error(error?.message || "Failed to update user");
+            }
+        } finally {
             setLoading(false);
         }
     };
@@ -146,21 +238,14 @@ const UpdateUser = () => {
             title={
                 <Space>
                     <EditOutlined />
-                    <Text strong style={{ fontSize: 18 }}>
-                        Update User
-                    </Text>
+                    <Text strong style={{ fontSize: 18 }}>Update User</Text>
                     {userEmail && (
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                            ({userEmail})
-                        </Text>
+                        <Text type="secondary" style={{ fontSize: 13 }}>({userEmail})</Text>
                     )}
                 </Space>
             }
             extra={
-                <Button
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => navigate("/User")}
-                >
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/User")}>
                     Back to List
                 </Button>
             }
@@ -169,128 +254,71 @@ const UpdateUser = () => {
                 form={form}
                 layout="vertical"
                 autoComplete="off"
-                initialValues={{
-                    accessOnline: true,
-                    disabled: false,
-                    temporaryLock: false,
-                }}
+                initialValues={{ disabled: false }}
             >
                 <Row gutter={24}>
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="User Name"
-                            name="userName"
-                            rules={[{ required: true, message: "Please enter username" }]}
-                        >
-                            <Input
-                                placeholder="Enter username"
-                                prefix={<UserOutlined />}
-                                disabled
-                            />
+                        <Form.Item label="User Name" name="userName">
+                            <Input prefix={<UserOutlined />} disabled />
                         </Form.Item>
                     </Col>
 
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Full Name"
-                            name="fullName"
-                            rules={[{ required: true, message: "Please enter full name" }]}
-                        >
+                        <Form.Item label="Full Name" name="fullName" rules={[{ required: true }]}>
                             <Input placeholder="Enter full name" />
                         </Form.Item>
                     </Col>
 
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Department"
-                            name="department"
-                            rules={[{ required: true, message: "Please select department" }]}
-                        >
-                            <Select placeholder="Select department">
-                                <Option value="Engineering">Engineering</Option>
-                                <Option value="Finance">Finance</Option>
-                                <Option value="Human Resources">Human Resources</Option>
-                                <Option value="Operations">Operations</Option>
-                                <Option value="Sales">Sales</Option>
-                            </Select>
+                        <Form.Item label="Department" name="department" rules={[{ required: true }]}>
+                            <Select
+                                placeholder="Select department"
+                                loading={optionsLoading}
+                                showSearch
+                                optionFilterProp="label"
+                                options={departments.map((d) => ({ value: d.Value, label: d.Label }))}
+                            />
                         </Form.Item>
                     </Col>
 
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Unit"
-                            name="unit"
-                            rules={[{ required: true, message: "Please select unit" }]}
-                        >
-                            <Select placeholder="Select unit">
-                                <Option value="Frontend">Frontend</Option>
-                                <Option value="Backend">Backend</Option>
-                                <Option value="QA">QA</Option>
-                                <Option value="DevOps">DevOps</Option>
-                                <Option value="Design">Design</Option>
-                            </Select>
+                        <Form.Item label="Unit" name="unit">
+                            <Select
+                                placeholder={departmentId ? "Select unit" : "Select department first"}
+                                disabled={!departmentId || unitsLoading}
+                                loading={unitsLoading}
+                                showSearch
+                                optionFilterProp="label"
+                                allowClear
+                                options={units.map((u) => ({ value: u.Value, label: u.Label }))}
+                                notFoundContent={unitsLoading ? "Loading..." : "No units found"}
+                            />
                         </Form.Item>
                     </Col>
 
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="User Roles"
-                            name="roles"
-                            rules={[{ required: true, message: "Please select at least one role" }]}
-                        >
-                            <Select mode="multiple" placeholder="Select roles">
-                                <Option value="Admin">Administrator</Option>
-                                <Option value="Manager">Manager</Option>
-                                <Option value="Developer">Developer</Option>
-                                <Option value="Reviewer">Reviewer</Option>
-                                <Option value="Viewer">Viewer</Option>
-                            </Select>
+                        <Form.Item label="User Roles" name="roles" rules={[{ required: true }]}>
+                            <Select
+                                mode="multiple"
+                                placeholder="Select roles"
+                                loading={optionsLoading}
+                                optionFilterProp="label"
+                                options={roles.map((r) => ({ value: r.Value, label: r.Label }))}
+                            />
                         </Form.Item>
                     </Col>
-                    
                 </Row>
 
                 <Divider orientation="left" plain>
                     <Text type="secondary" style={{ fontSize: 13 }}>
-                        <LockOutlined style={{ marginRight: 6 }} />
-                        Account Status
+                        <LockOutlined style={{ marginRight: 6 }} /> Account Status
                     </Text>
                 </Divider>
 
                 <Row gutter={24}>
                     <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Disable User"
-                            name="disabled"
-                            valuePropName="checked"
-                            extra={
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Prevents the user from logging in
-                                </Text>
-                            }
-                        >
-                            <Switch
-                                checkedChildren="Disabled"
-                                unCheckedChildren="Active"
-                            />
-                        </Form.Item>
-                    </Col>
-
-                    <Col xs={24} sm={12} lg={12}>
-                        <Form.Item
-                            label="Temporary Lock"
-                            name="temporaryLock"
-                            valuePropName="checked"
-                            extra={
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Locks the account until manually unlocked
-                                </Text>
-                            }
-                        >
-                            <Switch
-                                checkedChildren={<StopOutlined />}
-                                unCheckedChildren="Unlocked"
-                            />
+                        <Form.Item label="Disable User" name="disabled" valuePropName="checked">
+                            <Switch checkedChildren="Disabled" unCheckedChildren="Active" />
                         </Form.Item>
                     </Col>
                 </Row>
@@ -299,15 +327,8 @@ const UpdateUser = () => {
 
                 <Form.Item style={{ marginBottom: 0 }}>
                     <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-                        <Button onClick={() => navigate("/User")}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<SaveOutlined />}
-                            loading={loading}
-                            onClick={handleSubmit}
-                        >
+                        <Button onClick={() => navigate("/User")}>Cancel</Button>
+                        <Button type="primary" icon={<SaveOutlined />} loading={loading} onClick={handleSubmit}>
                             Update User
                         </Button>
                     </Space>

@@ -20,6 +20,9 @@ const UserList = () => {
     const [searchText, setSearchText] = useState("");
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
+    
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const fetchUsers = async () => {
         const storedUser = localStorage.getItem("user");
@@ -36,14 +39,12 @@ const UserList = () => {
                 setLoading(false);
                 return;
             }
-            const apiPayload = {
-                sys_user_id: userId,
-            };
+            const apiPayload = { sys_user_id: userId };
             const result = await GetAllUsers_API(apiPayload);
             if (result.success && result.data) {
                 const formattedData = result.data.map((user, index) => ({
                     Id: user.Id,
-                    key: user.UserName || index,
+                    key: user.Id || index,
                     userName: user.UserName,
                     fullName: user.FullName,
                     department: user.DepartmentName,
@@ -63,56 +64,30 @@ const UserList = () => {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText]);
 
     const columns = [
         {
             title: "User Name",
             dataIndex: "userName",
             key: "userName",
-            sorter: (a, b) =>
-                (a.userName || "").localeCompare(b.userName || ""),
-            render: (value) => <Text strong>{value}</Text>,
+            sorter: (a, b) => (a.userName || "").localeCompare(b.userName || ""),
+            render: (value) => <Text strong>{value}</Text>, 
         },
-        {
-            title: "Full Name",
-            dataIndex: "fullName",
-            key: "fullName",
-            sorter: (a, b) =>
-                (a.fullName || "").localeCompare(b.fullName || ""),
-        },
-        {
-            title: "Department",
-            dataIndex: "department",
-            key: "department",
-        },
-        {
-            title: "Unit",
-            dataIndex: "unit",
-            key: "unit",
-        },
-        {
-            title: "Roles",
-            dataIndex: "roles",
-            key: "roles",
-        },
-        {
-            title: "Created By",
-            dataIndex: "CreatedBy",
-            key: "CreatedBy",
-        },
-        {
-            title: "Created Date",
-            dataIndex: "CreatedDate",
-            key: "CreatedDate",
-        },
-        {
-            title: "Last Login Date",
-            dataIndex: "LastLoginDate",
-            key: "LastLoginDate",
-        },
+        { title: "Full Name", dataIndex: "fullName", key: "fullName", sorter: (a, b) => (a.fullName || "").localeCompare(b.fullName || "") },
+        { title: "Department", dataIndex: "department", key: "department" },
+        { title: "Unit", dataIndex: "unit", key: "unit" },
+        { title: "Roles", dataIndex: "roles", key: "roles" },
+        { title: "Created By", dataIndex: "CreatedBy", key: "CreatedBy" },
+        { title: "Created Date", dataIndex: "CreatedDate", key: "CreatedDate" },
+        { title: "Last Login Date", dataIndex: "LastLoginDate", key: "LastLoginDate" },
         {
             title: "Status",
             dataIndex: "status",
@@ -132,14 +107,14 @@ const UserList = () => {
             title: "Action",
             key: "action",
             fixed: "right",
-            width: 100,
+            width: 80,
             render: (_, record) => (
                 <Space size={4}>
                     <Button
                         type="text"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined style={{ color: '#1890ff' }} />}
                         title="Edit"
-                        onClick={() => navigate(`edit/${record.Id}`)} // ✅ uses hidden Id
+                        onClick={() => navigate(`edit/${record.Id}`)}
                     />
                 </Space>
             ),
@@ -150,74 +125,85 @@ const UserList = () => {
         const query = searchText.trim().toLowerCase();
         if (!query) return users;
         return users.filter((user) =>
-            [
-                user.userName,
-                user.fullName,
-                user.department,
-                user.unit,
-                user.roles,
-            ]
+            [user.userName, user.fullName, user.department, user.unit, user.roles]
                 .join(" ")
                 .toLowerCase()
-                .includes(query),
+                .includes(query)
         );
     }, [searchText, users]);
 
     return (
-        <Card
-            title="User Management"
-            extra={
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => navigate("create")}
-                >
-                    Create New User
-                </Button>
-            }
-            styles={{ body: { paddingTop: 16 } }}
-        >
-            <Space
-                style={{
-                    width: "100%",
-                    justifyContent: "space-between",
-                    marginBottom: 16,
-                }}
-            >
-                <Input
-                    allowClear
-                    placeholder="Search by name, department, or unit"
-                    prefix={<SearchOutlined style={{ color: "#8c8c8c" }} />}
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    style={{ maxWidth: 320 }}
-                />
-                <Text type="secondary">
-                    {filteredData.length} of {users.length} users
-                </Text>
-            </Space>
+        <>
+            <style>{`
+                .custom-header-table .ant-table-thead > tr > th {
+                    background: #1890ff !important; /* Primary blue header */
+                    color: #ffffff !important;      /* White text */
+                    padding: 8px 12px !important;   /* Compact spacing */
+                    border-bottom: none !important;
+                }
+                
+                /* Remove background change on hover for header */
+                .custom-header-table .ant-table-thead > tr > th:hover {
+                    background: #1890ff !important; 
+                }
 
-            <Table
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="key"
-                loading={loading}
-                scroll={{ x: 1300 }}
-                size="middle"
-                pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ["10", "20", "50", "100"],
-                    showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} users`,
-                }}
-                locale={{
-                    emptyText: searchText
-                        ? "No users match your search."
-                        : "No users found.",
-                }}
-            />
-        </Card>
+                .custom-header-table .ant-table-tbody > tr > td {
+                    padding: 6px 12px !important; /* Compact spacing */
+                }
+
+                .custom-header-table .ant-table-pagination.ant-pagination {
+                    margin: 12px 0 0 0 !important; /* Compact pagination spacing */
+                }
+            `}</style>
+
+            <Card
+                title={<Text strong>User Management</Text>}
+                extra={
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("create")}>
+                        Create New User
+                    </Button>
+                }
+                styles={{ body: { paddingTop: 16 } }}
+            >
+                <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }}>
+                    <Input
+                        allowClear
+                        placeholder="Search by name, department, or unit"
+                        prefix={<SearchOutlined style={{ color: "#8c8c8c" }} />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        style={{ maxWidth: 320 }}
+                    />
+                    <Text type="secondary">
+                        {filteredData.length} of {users.length} users
+                    </Text>
+                </Space>
+
+                <Table
+                    className="custom-header-table" 
+                    columns={columns}
+                    dataSource={filteredData}
+                    rowKey="Id"
+                    loading={loading}
+                    scroll={{ x: 1300 }}
+                    size="small" 
+                    pagination={{
+                        current: currentPage,
+                        pageSize: pageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50", "100"],
+                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} users`,
+                        onChange: (page, newPageSize) => {
+                            setCurrentPage(page);
+                            setPageSize(newPageSize);
+                        },
+                    }}
+                    locale={{
+                        emptyText: searchText ? "No users match your search." : "No users found.",
+                    }}
+                />
+            </Card>
+        </>
     );
 };
 
