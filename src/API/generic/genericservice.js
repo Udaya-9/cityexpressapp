@@ -31,6 +31,42 @@ export class GenericService {
     }));
   }
 
+  async getUnits() {
+    const list = await fetchGenericList({ FilterType: 'UnitTable' }, 'UnitTable');
+    return list.map((d) => ({
+      Value: d.Value,
+      Label: (d.Label || '').trim(),
+      DepartmentId: d.Value,
+      DepartmentName: (d.Label || '').trim(),
+    }));
+  }
+
+
+ async getUnitsByDeparmentId(departmentId) {
+  const response = await fetchGenericList(
+    { 
+      FilterType: "UnitTable",
+      DepartmentId: departmentId 
+    },
+    "units"
+  );  
+  const list = Array.isArray(response) ? response : response?.data || [];  
+  return list.map((u) => ({
+    Value: u.Value,
+    Label: (u.Label || "").trim(),
+  }));
+}
+
+    async getRoles() {
+    const list = await fetchGenericList({ FilterType: 'RoleTable' }, 'RoleTable');
+    return list.map((d) => ({
+      Value: d.Value,
+      Label: (d.Label || '').trim(),
+      DepartmentId: d.Value,
+      DepartmentName: (d.Label || '').trim(),
+    }));
+  }
+
   async getUsers(departmentId) {
     const list = await fetchGenericList(
       { FilterType: 'User', DepartmentId: departmentId || undefined },
