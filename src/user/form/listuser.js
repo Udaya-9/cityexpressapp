@@ -1,6 +1,15 @@
 import React, { useMemo, useState, useEffect } from "react";
-import {  useNavigate } from "react-router-dom";
-import { Card, Table, Button, Tag, Space, Input, Typography, message } from "antd";
+import { useNavigate } from "react-router-dom";
+import {
+    Card,
+    Table,
+    Button,
+    Tag,
+    Space,
+    Input,
+    Typography,
+    message,
+} from "antd";
 import { PlusOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
 import { GetAllUsers_API } from "../API/User.API";
 
@@ -13,29 +22,35 @@ const UserList = () => {
     const [loading, setLoading] = useState(false);
 
     const fetchUsers = async () => {
-        const storedUser  = localStorage.getItem("user");
-        if (!storedUser ) {
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) {
             message.error("ID not found");
             return;
         }
         setLoading(true);
-        try {     
-             const user = JSON.parse(storedUser);
-           const apiPayload = {
-            sys_user_id: user.id  
-        };    
-             const result = await GetAllUsers_API(apiPayload);
+        try {
+            const user = JSON.parse(storedUser);
+            const userId = user.Id || user.id;
+            if (!userId) {
+                message.error("User ID not found in session.");
+                setLoading(false);
+                return;
+            }
+            const apiPayload = {
+                sys_user_id: userId,
+            };
+            const result = await GetAllUsers_API(apiPayload);
             if (result.success && result.data) {
                 const formattedData = result.data.map((user, index) => ({
-                     Id: user.Id, 
+                    Id: user.Id,
                     key: user.UserName || index,
                     userName: user.UserName,
                     fullName: user.FullName,
                     department: user.DepartmentName,
                     unit: user.UnitName,
-                    CreatedBy:user.CreatedBy,
-                    CreatedDate:user.CreatedDate,
-                    LastLoginDate:user.LastLoginDate,
+                    CreatedBy: user.CreatedBy,
+                    CreatedDate: user.CreatedDate,
+                    LastLoginDate: user.LastLoginDate,
                     status: user.Status,
                     roles: user.Roles,
                 }));
@@ -52,85 +67,85 @@ const UserList = () => {
         fetchUsers();
     }, []);
 
- 
-const columns = [   
-    {
-        title: "User Name",
-        dataIndex: "userName",
-        key: "userName",
-        sorter: (a, b) => (a.userName || "").localeCompare(b.userName || ""),
-        render: (value) => <Text strong>{value}</Text>,
-    },
-    {
-        title: "Full Name",
-        dataIndex: "fullName",
-        key: "fullName",
-        sorter: (a, b) => (a.fullName || "").localeCompare(b.fullName || ""),
-    },
-    {
-        title: "Department",
-        dataIndex: "department",
-        key: "department",
-    },
-    {
-        title: "Unit",
-        dataIndex: "unit",
-        key: "unit",
-    },
-    {
-        title: "Roles",
-        dataIndex: "roles",
-        key: "roles",
-    },
-    {
-        title: "Created By",
-        dataIndex: "CreatedBy",
-        key: "CreatedBy",
-    },
-    {
-        title: "Created Date",
-        dataIndex: "CreatedDate",
-        key: "CreatedDate",
-    },
-    {
-        title: "Last Login Date",
-        dataIndex: "LastLoginDate",
-        key: "LastLoginDate",
-    },
-    {
-        title: "Status",
-        dataIndex: "status",
-        key: "status",
-        filters: [
-            { text: "Active", value: "Active" },
-            { text: "Inactive", value: "Inactive" },
-        ],
-        onFilter: (value, record) => record.status === value,
-        render: (status) => (
-            <Tag color={status === "Active" ? "success" : "error"}>
-                {status}
-            </Tag>
-        ),
-    },
-    {
-        title: "Action",
-        key: "action",
-        fixed: "right",
-        width: 100,
-        render: (_, record) => (
-            <Space size={4}>
-                <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    title="Edit"
-                    onClick={() => navigate(`edit/${record.Id}`)}  // ✅ uses hidden Id
-                />
-            </Space>
-        ),
-    },
-];
+    const columns = [
+        {
+            title: "User Name",
+            dataIndex: "userName",
+            key: "userName",
+            sorter: (a, b) =>
+                (a.userName || "").localeCompare(b.userName || ""),
+            render: (value) => <Text strong>{value}</Text>,
+        },
+        {
+            title: "Full Name",
+            dataIndex: "fullName",
+            key: "fullName",
+            sorter: (a, b) =>
+                (a.fullName || "").localeCompare(b.fullName || ""),
+        },
+        {
+            title: "Department",
+            dataIndex: "department",
+            key: "department",
+        },
+        {
+            title: "Unit",
+            dataIndex: "unit",
+            key: "unit",
+        },
+        {
+            title: "Roles",
+            dataIndex: "roles",
+            key: "roles",
+        },
+        {
+            title: "Created By",
+            dataIndex: "CreatedBy",
+            key: "CreatedBy",
+        },
+        {
+            title: "Created Date",
+            dataIndex: "CreatedDate",
+            key: "CreatedDate",
+        },
+        {
+            title: "Last Login Date",
+            dataIndex: "LastLoginDate",
+            key: "LastLoginDate",
+        },
+        {
+            title: "Status",
+            dataIndex: "status",
+            key: "status",
+            filters: [
+                { text: "Active", value: "Active" },
+                { text: "Inactive", value: "Inactive" },
+            ],
+            onFilter: (value, record) => record.status === value,
+            render: (status) => (
+                <Tag color={status === "Active" ? "success" : "error"}>
+                    {status}
+                </Tag>
+            ),
+        },
+        {
+            title: "Action",
+            key: "action",
+            fixed: "right",
+            width: 100,
+            render: (_, record) => (
+                <Space size={4}>
+                    <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        title="Edit"
+                        onClick={() => navigate(`edit/${record.Id}`)} // ✅ uses hidden Id
+                    />
+                </Space>
+            ),
+        },
+    ];
 
-  
     const filteredData = useMemo(() => {
         const query = searchText.trim().toLowerCase();
         if (!query) return users;
@@ -144,7 +159,7 @@ const columns = [
             ]
                 .join(" ")
                 .toLowerCase()
-                .includes(query)
+                .includes(query),
         );
     }, [searchText, users]);
 
