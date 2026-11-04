@@ -1,9 +1,14 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Auth Routes
 import LoginPage from "./login/form/index";
 import ForgetPassword from "./login/form/forgetpassword";
-import DefaultPage from './Default/form';
 import Dashboard from "./Default/form/default";
+//import RequesterDashboard from "./dashboard/form/requester"; 
+ import RequesterDashboard from "./dashboard/form/approver"; 
+
+// Main Modules
 import User from "./user/form";
 import Vendor from "./vendor/form";
 import Asset from "./assets/form"; 
@@ -17,10 +22,10 @@ import ResetPassword from "./user/form/resetpassword";
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <Routes>        
         <Route path="/" element={<LoginPage />} />
-        <Route path="/ResetPassword" element={<ForgetPassword />} />
-        <Route path="/dashboard" element={<DefaultPage />} />
+        <Route path="/ResetPassword" element={<ForgetPassword />} />   
+        <Route path="/dashboard" element={<Dashboard><RequesterDashboard /></Dashboard>} />
         <Route path="/vendor/*" element={<Dashboard><Vendor /></Dashboard>} />
         <Route path="/User/*" element={<Dashboard><User /></Dashboard>} />
         <Route path="/asset/*" element={<Dashboard><Asset /></Dashboard>} />
@@ -29,6 +34,8 @@ function App() {
         <Route path="/budget/*" element={<Dashboard><Budget /></Dashboard>} />
         <Route path="/parameter-settings" element={<Dashboard><ParameterSettings /></Dashboard>} />
         <Route path="/parameter-menu/:parameterId" element={<Dashboard><ParameterMenu /></Dashboard>} />
+        
+        {/* User Security */}
         <Route path="/change-password" element={<Dashboard><ResetPassword /></Dashboard>} />
       </Routes>
     </BrowserRouter>
@@ -36,4 +43,3 @@ function App() {
 }
 
 export default App;
-
